@@ -1,2 +1,2 @@
-# PILL_DISPENSER_G8
+# PILL_DISPENSER_G8_PROJECT
 Automated pill dispenser with LED signal, stepper motor control, optical piezo sensor, LoRaWAN communication and stored in non-volatile memory EEPROM
