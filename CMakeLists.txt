@@ -24,6 +24,11 @@ add_compile_options(-Wall
 # Tell CMake where to find the executable source file
 add_executable(${PROJECT_NAME} 
     main.c
+        button_handler.c
+        button_handler.h
+        board_config.h
+        dispenser_initialize.c
+        dispenser_initialize.h
 )
 
 # Create map/bin/hex/uf2 files
