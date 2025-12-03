@@ -27,7 +27,7 @@ void wait_button_handler(Dispenser* dis) {
 }
 
 void wait_start_handler(Dispenser* dis) {
-    gpio_put(dis->led_pin, 0);
+    gpio_put(dis->led_pin, 1);
 
     if (gpio_get(dis->button_pin2) == 0) {
         printf("Button pressed. Start dispensing...\n");
