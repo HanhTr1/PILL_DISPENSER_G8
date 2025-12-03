@@ -11,9 +11,9 @@ Automated pill dispenser with LED signal, stepper motor control, optical piezo s
 #### DETECT POWER STATUS
 #### RECALIBRATE
 ## STATE MACHINE
- - Wait for the button
- - Calibration
- - Ready to run
- - Dispensing (30s)
- - Finished (7 turns)
- - Error
+ - ST_WAIT_FOR_BUTTON
+ - ST_CALIBRATION
+ - ST_WAIT_FOR_START
+ - ST_DISPENSING
+ - ST_FINISHED
+
