@@ -28,6 +28,12 @@ add_executable(${PROJECT_NAME}
         pill_sensor.h
         stepper.c
         stepper.h
+        dispenser_initialize.h
+        dispenser_initialize.c
+        button_handler.h
+        button_handler.c
+        statemachine.c
+        statemachine.h
 
 )
 

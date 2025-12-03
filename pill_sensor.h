@@ -32,7 +32,7 @@ void pill_sensor_update(pillSensorState*ptr);
 
 bool pill_sensor_is_ready(pillSensorState*ptr);
 
-void pill_sensor_handle_irq(pillSensorState *ptr, uint gpio, uint32_t events);
+void pill_sensor_handle_irq(pillSensorState*ptr,uint gpio, uint32_t events);
 
 
 

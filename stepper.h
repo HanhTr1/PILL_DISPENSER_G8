@@ -4,22 +4,7 @@
 
 #ifndef BLINK_STEPPER_H
 #define BLINK_STEPPER_H
-
-
-#include <stdbool.h>
-#include <stdint.h>
-
-
-typedef struct {
-    uint32_t pins[4];
-    uint32_t sensor_pin;
-    int  step_index;
-    int  steps_per_rev;
-    bool calibrated;
-    volatile bool index_hit;
-    int  slot_offset_steps;
-} Stepper;
-
+#include"board_config.h"
 
 void stepper_init(Stepper *ptr);
 

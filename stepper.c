@@ -6,13 +6,12 @@
 #include "hardware/gpio.h"
 #include <stdio.h>
 
-#define STEP_DELAY_MS      1
+#define STEP_DELAY_MS      3
 #define CALIB_REV_COUNT    3
 #define MIN_STEPS_VALID    50      // Minimum steps between index hits to be considered a full revolution
 #define MAX_STEPS_GUARD    10000   // Safety upper bound to avoid infinite loops
 
-// Global pointer for the IRQ handler (RP2040 has a single global GPIO IRQ callback)
-static Stepper *s_stepper = NULL;
+
 
 // Half-step sequence (LSB -> pins[0])
 static const uint8_t half_steps[8][4] = {
@@ -26,14 +25,7 @@ static const uint8_t half_steps[8][4] = {
     {1, 0, 0, 1}
 };
 
-// Optical sensor IRQ: assume normal = HIGH, index gap = LOW
-static void sensor_isr(uint gpio, uint32_t events) {
-    if (!s_stepper) return;
-    if (gpio != s_stepper->sensor_pin) return;
-    if (events & GPIO_IRQ_EDGE_FALL) {
-        s_stepper->index_hit = true;
-    }
-}
+
 
 // Single half-step; dir = +1 for CW, -1 for CCW
 static void step(Stepper *ptr, int dir) {
@@ -50,7 +42,7 @@ static void step(Stepper *ptr, int dir) {
 static void motor_off(Stepper *ptr) {
     (void)ptr; // Currently unused; keeps the compiler happy
     for (int i = 0; i < 4; i++) {
-        gpio_put(s_stepper->pins[i], 0);
+        gpio_put(ptr->pins[i], 0);
     }
 }
 
@@ -74,7 +66,7 @@ void stepper_init(Stepper *ptr) {
     ptr->slot_offset_steps=0;
 
     // Register GPIO IRQ callback
-    s_stepper = ptr;
+
 
 }
 
