@@ -58,7 +58,7 @@ int main(void) {
     statemachine_init(&g_dispenser,
                       &g_stepper,
                       &g_sensor,
-                      8,        // pills_to_dispense
+                      7,        // pills_to_dispense
                       30000);   // interval_ms
 
     printf("System ready. Press button to start.\n");
