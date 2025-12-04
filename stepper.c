@@ -98,6 +98,7 @@ void stepper_calibrate(Stepper *ptr) {
         if (++guard > MAX_STEPS_GUARD) {
             printf("Error: index not detected. Check sensor.\n");
             motor_off(ptr);
+
             return;
         }
     }

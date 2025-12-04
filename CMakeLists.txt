@@ -34,6 +34,8 @@ add_executable(${PROJECT_NAME}
         button_handler.c
         statemachine.c
         statemachine.h
+        iuart.c
+        lorawan.c
 
 )
 

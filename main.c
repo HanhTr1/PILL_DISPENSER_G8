@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 
@@ -54,12 +55,12 @@ int main(void) {
     );
 
     // -------- State machine initialization --------
-    // Example: dispense 8 pills, one pill every 30 seconds
+    // Example: dispense 7 pills, one pill every 30 seconds
     statemachine_init(&g_dispenser,
                       &g_stepper,
                       &g_sensor,
-                      7,        // pills_to_dispense
-                      30000);   // interval_ms
+                      PILL_NUMS,        // pills_to_dispense
+                      PILL_TIME);   // interval_ms
 
     printf("System ready. Press button to start.\n");
 
