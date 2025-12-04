@@ -27,15 +27,15 @@ void wait_button_handler(Dispenser* dis) {
 }
 
 void wait_start_handler(Dispenser* dis) {
-    gpio_put(dis->led_pin, 0);
+    gpio_put(dis->led_pin, 1);
 
-    if (gpio_get(dis->button_pin) == 0) {
+    if (gpio_get(dis->button_pin2) == 0) {
         printf("Button pressed. Start dispensing...\n");
 
         gpio_put(dis->led_pin, 0);
         dis->state = ST_DISPENSING;
 
-        while (gpio_get(dis->button_pin) == 0) {
+        while (gpio_get(dis->button_pin2) == 0) {
             sleep_ms(BUTTON_DEBOUNCE_MS);
         }
     }

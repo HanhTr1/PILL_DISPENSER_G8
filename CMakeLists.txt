@@ -8,7 +8,7 @@ set(PICO_BOARD pico_w)
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 # Set name of project (as PROJECT_NAME) and C/C   standards
-project(pill-dispenser C CXX ASM)
+project(blink C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -22,13 +22,19 @@ add_compile_options(-Wall
 )
 
 # Tell CMake where to find the executable source file
-add_executable(${PROJECT_NAME} 
-    main.c
-        button_handler.c
-        button_handler.h
+add_executable(${PROJECT_NAME}
+        main.c
         board_config.h
-        dispenser_initialize.c
+        pill_sensor.c
+        pill_sensor.h
+        stepper.c
+        stepper.h
         dispenser_initialize.h
+        dispenser_initialize.c
+        button_handler.h
+        button_handler.c
+        statemachine.c
+        statemachine.h
 )
 
 # Create map/bin/hex/uf2 files
