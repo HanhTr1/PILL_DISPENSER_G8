@@ -5,6 +5,7 @@
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include <stdio.h>
+#include<stdbool.h>
 
 #define STEP_DELAY_MS      3
 #define CALIB_REV_COUNT    3
@@ -65,7 +66,10 @@ void stepper_init(Stepper *ptr) {
     ptr->index_hit     = false;
     ptr->slot_offset_steps=0;
 
-    // Register GPIO IRQ callback
+    // for recovery
+    ptr->current_steps_slot=0;
+    ptr->current_index=0;
+    ptr->in_motor=false;
 
 
 }
@@ -141,26 +145,33 @@ void stepper_calibrate(Stepper *ptr) {
     printf("Calibration OK. steps_per_rev = %d\n", ptr->steps_per_rev);
 }
 
-// Internal helper: run "section × 1/8 revolutions"; section=8 => full revolution
-static void stepper_run_sections(Stepper *ptr, int section, int dir) {
-    if (!ptr->calibrated) {
-        printf("Not calibrated. Call stepper_calibrate() first.\n");
-        return;
-    }
-
-    int steps = (ptr->steps_per_rev * section) / 8;
-    if (steps <= 0) return;
-
-    while (steps-- > 0) {
-        step(ptr, dir);
-    }
-    motor_off(ptr);
-}
-
 // Public API: one pill slot = 1/8 revolution (CW)
 void stepper_step_one_slot(Stepper *ptr) {
-    stepper_run_sections(ptr, 1, +1);
-}
+    if (!ptr->calibrated){
+    printf("Not calibrated. calibrate first.\n");
+    return ;
+    }
+    if (ptr->current_steps_slot >SLOT_OFFSET_STEPS) {
+        ptr->current_steps_slot=0;
+    }
+    uint16_t remaining_steps=SLOT_OFFSET_STEPS - ptr->current_steps_slot;
+    printf("[Stepper] step_one_slot: already=%u, remaining=%u\n",
+           ptr->current_steps_slot, remaining_steps);
+           ptr->in_motor = true;
+    for (uint16_t i=0;i<remaining_steps;i++) {
+        step(ptr, +1);
+        ptr->current_steps_slot++;
+        //this part for eeprom to store the current steps
+        // if ((ptr->current_steps_slot % 8) == 0) {
+        //     // eeprom_save_state(...);
+    // }
+        }
+        ptr->current_index=(ptr->current_index+1)%8;
+        ptr->current_steps_slot=0;
+        ptr->in_motor=false;
+        motor_off(ptr);
+    }
+
 
 
 
@@ -181,4 +192,26 @@ void stepper_apply_slot_offset(Stepper *ptr) {
         step(ptr, dir);
     }
     motor_off(ptr);
+}
+
+void stepper_recovery(Stepper *ptr){
+    if (!ptr->in_motor||ptr->current_steps_slot==0){
+        printf("[Stepper] No partial slot to recover.\n");
+        return;
+    }
+    if (ptr->current_steps_slot>SLOT_OFFSET_STEPS) {
+        ptr->current_steps_slot=SLOT_OFFSET_STEPS;
+    }
+    uint16_t remaining_steps=SLOT_OFFSET_STEPS - ptr->current_steps_slot;
+    printf("[Stepper] Recovering slot: already=%u, remaining=%u\n",
+           ptr->current_steps_slot, remaining_steps);
+    for (uint16_t i = 0; i < remaining_steps; ++i) {
+        step(ptr, +1);
+        ptr->current_steps_slot++;
+    }
+    ptr->current_index=(ptr->current_index+1)%8;
+    ptr->current_steps_slot=0;
+    ptr->in_motor = false;
+    motor_off(ptr);
+
 }

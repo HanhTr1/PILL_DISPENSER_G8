@@ -51,6 +51,10 @@ typedef struct {
     bool calibrated;
     volatile bool index_hit;
     int  slot_offset_steps;
+    //for recovery
+    bool in_motor;
+    uint current_index;
+    uint current_steps_slot;
 } Stepper;
 
 typedef struct {
