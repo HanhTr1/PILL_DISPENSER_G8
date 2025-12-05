@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include"board_config.h"
 #include "lorawan.h"
+#include "eeprom.h"
 // Half-step offset between optical index and the first pill slot.
 // You measured that one slot ≈ 144 half-steps.
 
@@ -42,7 +43,13 @@ void statemachine_step(Dispenser *dis) {
     switch (dis->state) {
     case ST_BOOT: // i havent write anything yet in this state, just for it to move to lora to test
         printf("[FSM] Booting system...\n");
-        dis->state = ST_LORA_CONNECT;
+            simple_state_t saved;
+            if (load_state(&saved)==0) {
+                dis->state=saved.state;
+                dis->pills_left=saved.pills_left;
+            } else {
+                dis->state = ST_LORA_CONNECT;
+            }
         break;
 
     case ST_LORA_CONNECT:
@@ -79,9 +86,9 @@ void statemachine_step(Dispenser *dis) {
                 break;
             }
         }
-
-                dis->state = ST_WAIT_DISPENSING;
-                break;
+            dis->state = ST_WAIT_DISPENSING;
+            save_sm_state(dis);
+        break;
 
     case ST_WAIT_DISPENSING:
         // Second button press -> start dispensing loop
@@ -116,6 +123,7 @@ void statemachine_step(Dispenser *dis) {
                 dis->total_dispense_count++;
                 if (dis->pills_left > 0) {
                     dis->pills_left--;
+                    save_sm_state(dis);
                 }
                 printf("[FSM] PILL DETECTED. total=%lu, left=%u\n",
                        (unsigned long)dis->total_dispense_count,
@@ -144,6 +152,7 @@ void statemachine_step(Dispenser *dis) {
        led_blink(dis,3);
         dis->state      = ST_WAIT_CALIBRATION;
         dis->pills_left = PILL_NUMS;   // or reset to default pills_to_dispense if you want
+        save_sm_state(dis);
         break;
     }
 }

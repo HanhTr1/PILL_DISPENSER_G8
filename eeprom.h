@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "hardware/i2c.h"
+#include "board_config.h"
 
 #define I2C_PORT i2c0
 #define I2C_SDA_PIN 16
@@ -30,9 +31,9 @@
 
 typedef struct {
     uint8_t state;       // FSM state
-    uint8_t state_not;   // ~state
+    uint8_t not_state;   // ~state
     uint8_t pills_left;
-    uint8_t pills_left_not; // ~pills_left
+    uint8_t not_pills_left; // ~pills_left
 } simple_state_t;
 
 
@@ -49,4 +50,5 @@ void write_log( char *msg);
 void read_log();
 int save_state(simple_state_t *s);
 int load_state(simple_state_t *s);
+void save_sm_state(Dispenser *dis);
 #endif //PILL_DISPENSER_5_EEPROM_H

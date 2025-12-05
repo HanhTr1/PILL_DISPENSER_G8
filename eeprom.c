@@ -139,11 +139,13 @@ void read_log() {
             printf("Invalid entry at index %d\n", i);
             return;
         }
-        uint16_t cal_crc = crc16(entry, len+1+2);
-       if (cal_crc != 0) {
-           printf("CRC ERROR\n");
-           return;
-       }
+        uint16_t stored_crc = (entry[len + 1] << 8) | entry[len + 2];
+        uint16_t calc_crc = crc16(entry, len + 1); // entry+ '\0'
+        if (calc_crc != stored_crc) {
+            printf("CRC ERROR\n");
+            return;
+        }
+
         printf("Log %d: %.*s\n\n", i, len, (char*)entry);
     }
 
@@ -151,9 +153,9 @@ void read_log() {
 int save_state(simple_state_t *s) {
     simple_state_t buf;
     buf.state = s->state;
-    buf.state_not = ~s->state;
+    buf.not_state = ~s->state;
     buf.pills_left = s->pills_left;
-    buf.pills_left_not = ~s->pills_left;
+    buf.not_pills_left = ~s->pills_left;
 
     return eeprom_write(STATE_ADDR, (uint8_t*)&buf, sizeof(buf));
 }
@@ -164,14 +166,23 @@ int load_state(simple_state_t *s) {
     }
 
 
-    if (buf.state != (uint8_t)(~buf.state_not) ||
-        buf.pills_left != (uint8_t)(~buf.pills_left_not)) {
+    if (buf.state != (uint8_t)(~buf.not_state) ||
+        buf.pills_left != (uint8_t)(~buf.not_pills_left)) {
         return -2; // data error
         }
 
     memcpy(s, &buf, sizeof(buf));
     return 0; // OK
 }
+void save_sm_state(Dispenser *dis) {
+    simple_state_t s;
+    s.state = dis->state;
+    s.not_state = ~dis->state;
+    s.pills_left = dis->pills_left;
+    s.not_pills_left = ~dis->pills_left;
+    save_state(&s);
+}
+
 
 
 
