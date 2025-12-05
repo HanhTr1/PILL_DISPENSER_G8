@@ -4,7 +4,7 @@
 #include "hardware/gpio.h"
 
 
-void wait_button_handler(Dispenser* dis) {
+void wait_calib_button_handler(Dispenser* dis) {
     static uint64_t last_blink = 0;
     static bool led_state = false;
 
@@ -26,7 +26,7 @@ void wait_button_handler(Dispenser* dis) {
     }
 }
 
-void wait_start_handler(Dispenser* dis) {
+void wait_dispensing_button_handler(Dispenser* dis) {
     gpio_put(dis->led_pin, 1);
 
     if (gpio_get(dis->button_pin2) == 0) {

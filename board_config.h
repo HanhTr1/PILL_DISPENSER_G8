@@ -64,6 +64,8 @@ typedef struct {
     uint failed_dispense_count;
     absolute_time_t next_dispense_time;
 
+    bool is_lorawan_connected;
+
 } Dispenser;
 
 #endif //PILL_DISPENSER_BOARD_CONFIG_H

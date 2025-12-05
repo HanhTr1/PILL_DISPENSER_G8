@@ -50,18 +50,23 @@ void statemachine_step(Dispenser *dis) {
         lorawan_init();
 
         bool lora_connected = handle_lorawan();
+
         if (lora_connected) {
-            lorawan_send("CONNECTED_OK!");
+            printf("[FSM] LORA connection is done!!!\n");
+            lorawan_send_message("Group 8 LoraWan Connected!");
+            dis->is_lorawan_connected = true;
         }
         else {
             printf("Can't connect to LoRaWan. Continue to run without!\n");
+            dis->is_lorawan_connected = false;
         }
+        send_status_to_lorawan(dis, "BOOT_DONE & LORAWAN_CONNECTED!");
         dis->state = ST_WAIT_CALIBRATION;
         break;
 
     case ST_WAIT_CALIBRATION:
         // First button press -> go to calibration state
-        wait_button_handler(dis);
+        wait_calib_button_handler(dis); //I CHANGED THE NAME OF THE FUNCTION so it's easier to understand
         break;
 
     case ST_CALIBRATION:
@@ -74,12 +79,13 @@ void statemachine_step(Dispenser *dis) {
             dis->motor->slot_offset_steps = SLOT_OFFSET_STEPS;
             stepper_apply_slot_offset(dis->motor);
         }
+        send_status_to_lorawan(dis, "CALIBRATION_DONE!");
         dis->state = ST_WAIT_DISPENSING;
         break;
 
     case ST_WAIT_DISPENSING:
         // Second button press -> start dispensing loop
-        wait_start_handler(dis);
+        wait_dispensing_button_handler(dis);   //I CHANGED THE NAME OF THE FUNCTION so it's easier to understand
         break;
 
     case ST_DISPENSING: {
