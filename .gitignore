@@ -1,6 +1,6 @@
 cmake-build-debug/
 .DS_Store
 .idea
-.srctrlbm
-.srctrldb
-.srctrlprj
+*.srctrlbm
+*.srctrldb
+*.srctrlprj

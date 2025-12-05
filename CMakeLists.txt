@@ -36,6 +36,7 @@ add_executable(${PROJECT_NAME}
         statemachine.h
         iuart.c
         lorawan.c
+        eeprom.c
 
 )
 
@@ -47,6 +48,7 @@ target_link_libraries(${PROJECT_NAME}
         pico_stdlib
         hardware_pwm
         hardware_gpio
+        hardware_i2c
 )
 
 # Disable usb output, enable uart output

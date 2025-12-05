@@ -16,6 +16,7 @@
 #define LED_BLINK_US 500000
 #define BUTTON_DEBOUNCE_MS 20
 #define SLOT_OFFSET_STEPS 144
+#define HALF_STEPS 512
 
 //pill
 #define PILL_TIME 30000
@@ -52,8 +53,7 @@ typedef struct {
     volatile bool index_hit;
     int  slot_offset_steps;
     //for recovery
-    bool in_motor;
-    uint current_index;
+    bool in_motion;
     uint current_steps_slot;
 } Stepper;
 
@@ -71,6 +71,7 @@ typedef struct {
     uint failed_dispense_count;
     absolute_time_t next_dispense_time;
 
+    bool is_lorawan_connected;
 } Dispenser;
 
 #endif //PILL_DISPENSER_BOARD_CONFIG_H

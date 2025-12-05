@@ -2,7 +2,7 @@
 #include <string.h>
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
-
+#include "eeprom.h"
 #include "board_config.h"   // BUTTON_PIN, LED_PIN, OPTO_FORK_PIN, PIEZO_PIN
 #include "stepper.h"
 #include "pill_sensor.h"
@@ -26,7 +26,10 @@ static void global_gpio_irq(uint gpio, uint32_t events) {
 
 int main(void) {
     stdio_init_all();
-
+    setup_i2c();
+    // erase_log();
+    // uint8_t zero=0;
+    // eeprom_write(STATE_ADDR,&zero,1);
     // -------- Stepper initialization --------
     g_stepper.pins[0]    = 2;
     g_stepper.pins[1]    = 3;
