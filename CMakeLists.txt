@@ -8,10 +8,10 @@ set(PICO_BOARD pico_w)
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 # Set name of project (as PROJECT_NAME) and C/C   standards
-project(blink C CXX ASM)
+project(PILL_DISPENSER_5 C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-
+set(PICO_NO_PICOTOOL 1)
 # Creates a pico-sdk subdirectory in our project for the libraries
 pico_sdk_init()
 
@@ -34,6 +34,8 @@ add_executable(${PROJECT_NAME}
         button_handler.c
         statemachine.c
         statemachine.h
+        eeprom.c
+        eeprom.h
 
 )
 
@@ -43,8 +45,12 @@ pico_add_extra_outputs(${PROJECT_NAME})
 # Link to pico_stdlib (gpio, time, etc. functions)
 target_link_libraries(${PROJECT_NAME}
         pico_stdlib
+        pico_time
         hardware_pwm
         hardware_gpio
+        hardware_i2c
+
+
 )
 
 # Disable usb output, enable uart output
