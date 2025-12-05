@@ -29,7 +29,6 @@ bool lorawan_send_command(const char *command, const char *expect, uint32_t time
 
 bool lorawan_join(void) {
 
-
     if (!lorawan_send_command("AT\r\n", "OK", 500)) {
         printf("[LORA] ERROR: No response to AT.\n");
         return false;

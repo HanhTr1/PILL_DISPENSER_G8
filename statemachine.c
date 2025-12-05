@@ -19,7 +19,7 @@ void statemachine_init(Dispenser *dis,
     // Use existing helper to configure button / LED / piezo pins
     dispenser_init(dis, SW_0,SW_2, LED_PIN, PIEZO_PIN);
 
-    //set initial stage here!
+    //set initial state here!
     dis->state = ST_BOOT;
 
     // Attach modules
@@ -60,8 +60,10 @@ void statemachine_step(Dispenser *dis) {
             printf("Can't connect to LoRaWan. Continue to run without!\n");
             dis->is_lorawan_connected = false;
         }
+
         send_status_to_lorawan(dis, "BOOT_DONE & LORAWAN_CONNECTED!");
         dis->state = ST_WAIT_CALIBRATION;
+
         break;
 
     case ST_WAIT_CALIBRATION:
