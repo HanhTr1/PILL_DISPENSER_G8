@@ -188,9 +188,9 @@ int save_state(device_state_t *s)
     device_state_t buf;
     memcpy(&buf, s, sizeof(buf));
 
-    buf.crc = 0;
+    buf.crc16 = 0;
     uint16_t c = crc16((uint8_t*)&buf, sizeof(buf) - 2);
-    buf.crc = c;
+    buf.crc16 = c;
 
     return eeprom_write(STATE_ADDR, (uint8_t*)&buf, sizeof(buf));
 }
@@ -205,8 +205,8 @@ int load_state(device_state_t *s)
     if (buf.magic != 32 || buf.version != 1)
         return -2;
 
-    uint16_t saved_crc = buf.crc;
-    buf.crc = 0;
+    uint16_t saved_crc = buf.crc16;
+    buf.crc16 = 0;
     uint16_t c = crc16((uint8_t*)&buf, sizeof(buf) - 2);
 
     if (c != saved_crc)
@@ -229,7 +229,7 @@ void mark_turn_complete(device_state_t *s, bool pill_ok)
 
     if (s->current_slot >= 7) {
         s->current_slot = 0;
-        s->disp_state = ST_FINISHED;
+        s->dispense_state = ST_FINISHED;
     } else {
         s->current_slot++;
     }
@@ -248,7 +248,7 @@ void auto_recalibrate(device_state_t *s)
 
     s->current_slot = 0;
     s->calibrated = 1;
-    s->disp_state = ST_WAIT_DISPENSING;
+    s->dispense_state = ST_WAIT_DISPENSING;
 }
 
 

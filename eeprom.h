@@ -35,11 +35,11 @@ typedef struct {
     uint8_t current_slot;  // 0..7
     uint8_t pills_left;    // 0..7
     uint8_t state;
-    uint8_t disp_state;  // device_state_e
+    uint8_t dispense_state;  // device_state_e
     uint8_t in_progress;   // 1 = motor turning but not complete
     uint32_t step_within_slot; // to detect partial rotation if needed
     uint32_t timestamp;
-    uint16_t crc;
+    uint16_t crc16;
 }device_state_t;
 
 
