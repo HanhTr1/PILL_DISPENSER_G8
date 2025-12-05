@@ -7,17 +7,23 @@
 #include "eeprom.h"
 #include "board_config.h"
 #include "hardware/gpio.h"
-
+void setup_i2c(void) {
+    i2c_init(I2C_PORT, I2C_BAUDRATE);
+    gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C);
+    gpio_pull_up(I2C_SDA_PIN);
+    gpio_pull_up(I2C_SCL_PIN);
+}
 void init_default_state(device_state_t *s)
 {
     memset(s, 0, sizeof(*s));
-    s->magic = 32;
+    s->magic = 0xA5A5;
     s->version = 1;
     s->calibrated = 0;
     s->current_slot = 0;
     s->pills_left = 7;
     s->in_progress = 0;
-    s->disp_state =ST_BOOT;
+    s->dispense_state =ST_BOOT;
     save_state(s);
 }
 
@@ -54,13 +60,6 @@ int eeprom_read(uint16_t addr, uint8_t *data, size_t len) {
         return -1;
     }
     return 0;
-}
-void setup_i2c(void) {
-    i2c_init(I2C_PORT, I2C_BAUDRATE);
-    gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(I2C_SDA_PIN);
-    gpio_pull_up(I2C_SCL_PIN);
 }
 uint16_t crc16(const uint8_t *data_p, size_t length) {
     uint16_t crc = 0xFFFF;
@@ -107,6 +106,7 @@ void write_log(char *msg) {
     }
     int find =find_log();
     if (find == -1) {
+        printf("Logs are full. Erasing logs\n");
         erase_log();
         find =0;
     }
@@ -139,9 +139,7 @@ void read_log() {
         if (entry[0] ==0) {
             return;
         }
-
         int len = -1;
-
         for (int j = 0; j < LOG_STRING_MAX_LEN+1; j++) { //find \0 at idx 62
             if (entry[j] == 0) {
                 len = j;
@@ -160,28 +158,6 @@ void read_log() {
         printf("Log %d: %.*s\n\n", i, len, (char*)entry);
     }
 
-}
-void validate_command( char *command, int *command_idx) {
-    int ch;
-    while ((ch = getchar_timeout_us(0)) != PICO_ERROR_TIMEOUT) {
-        if (ch == '\n' || ch == '\r') {
-            command[*command_idx] = 0;
-
-            for (int i = 0; i < *command_idx; i++)
-                command[i] = (char)tolower((unsigned char)command[i]);
-            *command_idx = 0;
-
-            if (strcmp(command, "read") == 0 && eeprom_available()) {
-                read_log();
-            } else if (strcmp(command, "erase") == 0 && eeprom_available()) {
-                erase_log();
-            } else if (command[0] != 0) {
-                printf("Unknown command\n");
-            }
-        } else if (*command_idx < COMMAND_SIZE - 1) {
-            command[(*command_idx)++] = (char)ch;
-        }
-    }
 }
 int save_state(device_state_t *s)
 {
