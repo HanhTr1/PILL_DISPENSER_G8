@@ -8,6 +8,18 @@
 #include "board_config.h"
 #include "hardware/gpio.h"
 
+void init_default_state(device_state_t *s)
+{
+    memset(s, 0, sizeof(*s));
+    s->magic = 32;
+    s->version = 1;
+    s->calibrated = 0;
+    s->current_slot = 0;
+    s->pills_left = 7;
+    s->in_progress = 0;
+    s->disp_state =ST_BOOT;
+    save_state(s);
+}
 
 int eeprom_write(uint16_t addr, uint8_t *data, size_t len) {
     if (len > LOG_ENTRY_SIZE) {
@@ -171,4 +183,77 @@ void validate_command( char *command, int *command_idx) {
         }
     }
 }
+int save_state(device_state_t *s)
+{
+    device_state_t buf;
+    memcpy(&buf, s, sizeof(buf));
+
+    buf.crc = 0;
+    uint16_t c = crc16((uint8_t*)&buf, sizeof(buf) - 2);
+    buf.crc = c;
+
+    return eeprom_write(STATE_ADDR, (uint8_t*)&buf, sizeof(buf));
+}
+
+int load_state(device_state_t *s)
+{
+    device_state_t buf;
+
+    if (eeprom_read(STATE_ADDR, (uint8_t*)&buf, sizeof(buf)) != 0)
+        return -1;
+
+    if (buf.magic != 32 || buf.version != 1)
+        return -2;
+
+    uint16_t saved_crc = buf.crc;
+    buf.crc = 0;
+    uint16_t c = crc16((uint8_t*)&buf, sizeof(buf) - 2);
+
+    if (c != saved_crc)
+        return -3;
+
+    memcpy(s, &buf, sizeof(buf));
+    return 0;
+}
+void mark_turn_start(device_state_t *s)
+{
+    s->in_progress = 1;
+    save_state(s);
+}
+void mark_turn_complete(device_state_t *s, bool pill_ok)
+{
+    s->in_progress = 0;
+
+    if (pill_ok && s->pills_left > 0)
+        s->pills_left--;
+
+    if (s->current_slot >= 7) {
+        s->current_slot = 0;
+        s->disp_state = ST_FINISHED;
+    } else {
+        s->current_slot++;
+    }
+
+    save_state(s);
+}
+
+void auto_recalibrate(device_state_t *s)
+{
+    write_log("Auto recalibrate...");
+
+    while (gpio_get(OPTO_FORK_PIN) != 0) {
+        //stepper_step_once_slow();   // 1 step
+        sleep_ms(8);                // tránh block dài
+    }
+
+    s->current_slot = 0;
+    s->calibrated = 1;
+    s->disp_state = ST_WAIT_DISPENSING;
+}
+
+
+
+
+
+
 

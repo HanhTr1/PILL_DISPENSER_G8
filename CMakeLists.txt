@@ -25,15 +25,15 @@ add_compile_options(-Wall
 add_executable(${PROJECT_NAME}
         main.c
         pill_sensor.c
-        pill_sensor.h
+        eeprom.c
+        iuart.c
+        lorawan.c
+        main.c
         stepper.c
-        stepper.h
-        dispenser_initialize.h
         dispenser_initialize.c
-        button_handler.h
         button_handler.c
         statemachine.c
-        statemachine.h
+
 
 )
 
@@ -43,8 +43,11 @@ pico_add_extra_outputs(${PROJECT_NAME})
 # Link to pico_stdlib (gpio, time, etc. functions)
 target_link_libraries(${PROJECT_NAME}
         pico_stdlib
+        pico_time
         hardware_pwm
         hardware_gpio
+        hardware_i2c
+
 )
 
 # Disable usb output, enable uart output
