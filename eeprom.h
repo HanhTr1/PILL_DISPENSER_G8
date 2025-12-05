@@ -29,19 +29,11 @@
 #define STATE_ADDR 0X0800
 
 typedef struct {
-    uint16_t magic;        // 0xA5A5
-    uint8_t version;       // version struct
-    uint8_t calibrated;    // 0/1
-    uint8_t current_slot;  // 0..7
-    uint8_t pills_left;    // 0..7
-    uint8_t state;
-    uint8_t dispense_state;  // device_state_e
-    uint8_t in_progress;   // 1 = motor turning but not complete
-    uint32_t step_within_slot; // to detect partial rotation if needed
-    uint32_t timestamp;
-    uint16_t crc16;
-}device_state_t;
-
+    uint8_t state;       // FSM state
+    uint8_t state_not;   // ~state
+    uint8_t pills_left;
+    uint8_t pills_left_not; // ~pills_left
+} simple_state_t;
 
 
 int eeprom_write(uint16_t addr, uint8_t *data, size_t len);
@@ -55,11 +47,6 @@ int find_log();
 void erase_log() ;
 void write_log( char *msg);
 void read_log();
-int save_state(device_state_t *s);
-int load_state(device_state_t *s);
-void init_default_state(device_state_t *s);
-void mark_turn_start(device_state_t *s);
-void mark_turn_complete(device_state_t *s, bool pill_ok);
-void auto_recalibrate(device_state_t *s);
-
+int save_state(simple_state_t *s);
+int load_state(simple_state_t *s);
 #endif //PILL_DISPENSER_5_EEPROM_H

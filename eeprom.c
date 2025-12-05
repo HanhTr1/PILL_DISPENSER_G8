@@ -14,18 +14,7 @@ void setup_i2c(void) {
     gpio_pull_up(I2C_SDA_PIN);
     gpio_pull_up(I2C_SCL_PIN);
 }
-void init_default_state(device_state_t *s)
-{
-    memset(s, 0, sizeof(*s));
-    s->magic = 0xA5A5;
-    s->version = 1;
-    s->calibrated = 0;
-    s->current_slot = 0;
-    s->pills_left = 7;
-    s->in_progress = 0;
-    s->dispense_state =ST_BOOT;
-    save_state(s);
-}
+
 
 int eeprom_write(uint16_t addr, uint8_t *data, size_t len) {
     if (len > LOG_ENTRY_SIZE) {
@@ -159,72 +148,29 @@ void read_log() {
     }
 
 }
-int save_state(device_state_t *s)
-{
-    device_state_t buf;
-    memcpy(&buf, s, sizeof(buf));
-
-    buf.crc16 = 0;
-    uint16_t c = crc16((uint8_t*)&buf, sizeof(buf) - 2);
-    buf.crc16 = c;
+int save_state(simple_state_t *s) {
+    simple_state_t buf;
+    buf.state = s->state;
+    buf.state_not = ~s->state;
+    buf.pills_left = s->pills_left;
+    buf.pills_left_not = ~s->pills_left;
 
     return eeprom_write(STATE_ADDR, (uint8_t*)&buf, sizeof(buf));
 }
+int load_state(simple_state_t *s) {
+    simple_state_t buf;
+    if (eeprom_read(STATE_ADDR, (uint8_t*)&buf, sizeof(buf)) != 0) {
+        return -1; // EEPROM error
+    }
 
-int load_state(device_state_t *s)
-{
-    device_state_t buf;
 
-    if (eeprom_read(STATE_ADDR, (uint8_t*)&buf, sizeof(buf)) != 0)
-        return -1;
-
-    if (buf.magic != 32 || buf.version != 1)
-        return -2;
-
-    uint16_t saved_crc = buf.crc16;
-    buf.crc16 = 0;
-    uint16_t c = crc16((uint8_t*)&buf, sizeof(buf) - 2);
-
-    if (c != saved_crc)
-        return -3;
+    if (buf.state != (uint8_t)(~buf.state_not) ||
+        buf.pills_left != (uint8_t)(~buf.pills_left_not)) {
+        return -2; // data error
+        }
 
     memcpy(s, &buf, sizeof(buf));
-    return 0;
-}
-void mark_turn_start(device_state_t *s)
-{
-    s->in_progress = 1;
-    save_state(s);
-}
-void mark_turn_complete(device_state_t *s, bool pill_ok)
-{
-    s->in_progress = 0;
-
-    if (pill_ok && s->pills_left > 0)
-        s->pills_left--;
-
-    if (s->current_slot >= 7) {
-        s->current_slot = 0;
-        s->dispense_state = ST_FINISHED;
-    } else {
-        s->current_slot++;
-    }
-
-    save_state(s);
-}
-
-void auto_recalibrate(device_state_t *s)
-{
-    write_log("Auto recalibrate...");
-
-    while (gpio_get(OPTO_FORK_PIN) != 0) {
-        //stepper_step_once_slow();   // 1 step
-        sleep_ms(8);                // tránh block dài
-    }
-
-    s->current_slot = 0;
-    s->calibrated = 1;
-    s->dispense_state = ST_WAIT_DISPENSING;
+    return 0; // OK
 }
 
 
