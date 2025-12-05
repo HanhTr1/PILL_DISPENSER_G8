@@ -1,7 +1,7 @@
 #include "dispenser_initialize.h"
 
 void dispenser_init(Dispenser* dis, uint button,uint button2,uint led, uint piezo) {
-    dis->state = ST_WAIT_FOR_BUTTON;
+    dis->state = ST_WAIT_CALIBRATION;
     dis->button_pin = button;
     dis->button_pin2 = button2;
     dis->led_pin = led;

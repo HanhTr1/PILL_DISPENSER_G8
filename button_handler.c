@@ -41,3 +41,12 @@ void wait_start_handler(Dispenser* dis) {
     }
 
 }
+
+void led_blink(Dispenser*dis,int time) {
+    for (int i=0;i<=time;i++) {
+        gpio_put(dis->led_pin, 1);
+        sleep_ms(150);
+        gpio_put(dis->led_pin, 0);
+        sleep_ms(150);
+    }
+}

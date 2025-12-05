@@ -5,6 +5,7 @@
 #include"stepper.h"
 #include <stdio.h>
 #include"board_config.h"
+#include "lorawan.h"
 // Half-step offset between optical index and the first pill slot.
 // You measured that one slot ≈ 144 half-steps.
 
@@ -17,6 +18,9 @@ void statemachine_init(Dispenser *dis,
 {
     // Use existing helper to configure button / LED / piezo pins
     dispenser_init(dis, SW_0,SW_2, LED_PIN, PIEZO_PIN);
+
+    //set initial stage here!
+    dis->state = ST_BOOT;
 
     // Attach modules
     dis->motor  = motor;
@@ -36,8 +40,26 @@ void statemachine_init(Dispenser *dis,
 
 void statemachine_step(Dispenser *dis) {
     switch (dis->state) {
+    case ST_BOOT: // i havent write anything yet in this state, just for it to move to lora to test
+        printf("[FSM] Booting system...\n");
+        dis->state = ST_LORA_CONNECT;
+        break;
 
-    case ST_WAIT_FOR_BUTTON:
+    case ST_LORA_CONNECT:
+        printf("[FSM] Connecting to LoRaWAN...\n");
+        lorawan_init();
+
+        bool lora_connected = handle_lorawan();
+        if (lora_connected) {
+            lorawan_send("CONNECTED_OK!");
+        }
+        else {
+            printf("Can't connect to LoRaWan. Continue to run without!\n");
+        }
+        dis->state = ST_WAIT_CALIBRATION;
+        break;
+
+    case ST_WAIT_CALIBRATION:
         // First button press -> go to calibration state
         wait_button_handler(dis);
         break;
@@ -51,11 +73,17 @@ void statemachine_step(Dispenser *dis) {
             // Apply the fixed offset between optical index and slot 0
             dis->motor->slot_offset_steps = SLOT_OFFSET_STEPS;
             stepper_apply_slot_offset(dis->motor);
+            if (dis->motor->calibrated==false) {
+                    printf("[FSM] Back to Pressing Button to Calibrate...\n");
+                dis->state= ST_WAIT_CALIBRATION;
+                break;
+            }
         }
-        dis->state = ST_WAIT_FOR_START;
-        break;
 
-    case ST_WAIT_FOR_START:
+                dis->state = ST_WAIT_DISPENSING;
+                break;
+
+    case ST_WAIT_DISPENSING:
         // Second button press -> start dispensing loop
         wait_start_handler(dis);
         break;
@@ -97,6 +125,7 @@ void statemachine_step(Dispenser *dis) {
                 dis->failed_dispense_count++;
                 printf("[FSM] NO PILL detected. failed=%lu\n",
                        (unsigned long)dis->failed_dispense_count);
+                       led_blink(dis,5);
             }
 
             // Schedule next dispensing time
@@ -106,17 +135,15 @@ void statemachine_step(Dispenser *dis) {
         break;
     }
 
+    case ST_RECOVERY:
+        break;
+
     case ST_FINISHED:
         // Simple LED blink pattern to indicate the cycle is finished,
         // then return to the initial wait state.
-        for (int i = 0; i < 3; ++i) {
-            gpio_put(dis->led_pin, 1);
-            sleep_ms(150);
-            gpio_put(dis->led_pin, 0);
-            sleep_ms(150);
-        }
-        dis->state      = ST_WAIT_FOR_BUTTON;
-        dis->pills_left = 0;   // or reset to default pills_to_dispense if you want
+       led_blink(dis,3);
+        dis->state      = ST_WAIT_CALIBRATION;
+        dis->pills_left = PILL_NUMS;   // or reset to default pills_to_dispense if you want
         break;
     }
 }
