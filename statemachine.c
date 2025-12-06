@@ -32,6 +32,7 @@ bool  restore_from_eeprom(Dispenser *dis){
         dis->motor->in_motion=(s.in_motion!=0);
         dis->motor->calibrated=(s.calibrated!=0);
         dis->motor->step_index=s.step_index;
+        dis->motor->slot_offset_steps=SLOT_OFFSET_STEPS;
     }
       printf("[FSM] Restored from EEPROM: state=%u, pills_left=%u, steps=%u, in_motion=%u,calibrate=%u,step_index=%u\n",
            s.state, s.pills_left, s.current_steps_slot, s.in_motion,s.calibrated,s.step_index);

@@ -27,10 +27,10 @@ static void global_gpio_irq(uint gpio, uint32_t events) {
 int main(void) {
     stdio_init_all();
     setup_i2c();
-    //---for debug---
-    // erase_log();
-    // uint8_t zero=0;
-    // eeprom_write(STATE_ADDR,&zero,1);
+    // ---for debug---
+     // erase_log();
+     // uint8_t zero=0;
+     // eeprom_write(STATE_ADDR,&zero,1);
     // -------- Stepper initialization --------
     g_stepper.pins[0]    = 2;
     g_stepper.pins[1]    = 3;
