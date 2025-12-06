@@ -31,9 +31,10 @@ bool  restore_from_eeprom(Dispenser *dis){
         dis->motor->current_steps_slot=s.current_steps_slot;
         dis->motor->in_motion=(s.in_motion!=0);
         dis->motor->calibrated=(s.calibrated!=0);
+        dis->motor->step_index=s.step_index;
     }
-      printf("[FSM] Restored from EEPROM: state=%u, pills_left=%u, steps=%u, in_motion=%u\n,calibrate=%u\n",
-           s.state, s.pills_left, s.current_steps_slot, s.in_motion,s.calibrated);
+      printf("[FSM] Restored from EEPROM: state=%u, pills_left=%u, steps=%u, in_motion=%u,calibrate=%u,step_index=%u\n",
+           s.state, s.pills_left, s.current_steps_slot, s.in_motion,s.calibrated,s.step_index);
     return true;
 }
 // Half-step offset between optical index and the first pill slot.
@@ -72,7 +73,16 @@ void statemachine_step(Dispenser *dis) {
         case ST_BOOT:{
             // i havent write anything yet in this state, just for it to move to lora to test
             printf("[FSM] Booting system...\n");
+            printf("[FSM] Debug pause: plug USB & open serial now, then press START button to continue.\n");
 
+            // Give USB some time to enumerate and allow opening the serial monitor
+            sleep_ms(3000);
+
+// Wait here until SW_0 (START button) is pressed
+    //         while (gpio_get(SW_0)) {
+    // // Optionally print some debug info every 200 ms if needed
+    //          sleep_ms(200);
+    //         }
             bool ok = restore_from_eeprom(dis);
 
             if (!ok) {
@@ -83,12 +93,13 @@ void statemachine_step(Dispenser *dis) {
             }
 
             // EEPROM restore succeeded
-            printf("[FSM] EEPROM restored. state=%d, pills_left=%u, steps=%u, in_motion=%d, calibrated=%d\n",
+            printf("[FSM] EEPROM restored. state=%d, pills_left=%u, steps=%u, in_motion=%d, calibrated=%d,step_index=%u\n",
                    dis->state,
                    dis->pills_left,
                    dis->motor ? dis->motor->current_steps_slot : 0,
                    dis->motor ? dis->motor->in_motion : 0,
-                   dis->motor ? dis->motor->calibrated : 0);
+                   dis->motor ? dis->motor->calibrated : 0,dis->motor->step_index);
+
 
             // 1) First, check if we lost power in the middle of a slot
             if (dis->motor &&
@@ -237,7 +248,7 @@ void statemachine_step(Dispenser *dis) {
         dis->state = ST_WAIT_CALIBRATION;
         break;
     }
-
+    printf("current steps %u",dis->motor->current_steps_slot);
     // 1) rewind partial slot and recalibrate (inside stepper_recovery)
     stepper_recovery(dis->motor, dis);
     // 2) After recovery, DO NOT dispense pills, DO NOT check pill_sensor.

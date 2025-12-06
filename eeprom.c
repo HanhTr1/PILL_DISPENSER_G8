@@ -161,7 +161,7 @@ int save_state(simple_state_t *s) {
     // motor progress
     buf.current_steps_slot = s->current_steps_slot;
     buf.in_motion          = s->in_motion;
-
+    buf.step_index       =s->step_index;
     buf.calibrated       = s->calibrated;
     buf.not_calibrated       =~buf.calibrated;
 
@@ -192,6 +192,7 @@ void save_sm_state(Dispenser *dis) {
     s.current_steps_slot = dis->motor->current_steps_slot;
     s.in_motion = dis->motor->in_motion?1:0;
     s.calibrated=dis->motor->calibrated?1:0;
+    s.step_index   = dis->motor->step_index;
     save_state(&s);
 }
 

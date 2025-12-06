@@ -27,6 +27,7 @@ static void global_gpio_irq(uint gpio, uint32_t events) {
 int main(void) {
     stdio_init_all();
     setup_i2c();
+    //---for debug---
     // erase_log();
     // uint8_t zero=0;
     // eeprom_write(STATE_ADDR,&zero,1);
@@ -71,9 +72,6 @@ int main(void) {
     while (true) {
         // Drive high-level state machine
         statemachine_step(&g_dispenser);
-
-        // Let the SDK do housekeeping work (USB, etc.)
-        tight_loop_contents();
     }
 
     return 0;

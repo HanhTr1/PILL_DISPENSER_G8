@@ -17,6 +17,7 @@
 #define BUTTON_DEBOUNCE_MS 20
 #define SLOT_OFFSET_STEPS 144
 #define HALF_STEPS 512
+#define RECOVERY_COMPENSATION  40
 
 //pill
 #define PILL_TIME 30000
@@ -54,7 +55,7 @@ typedef struct {
     int  slot_offset_steps;
     //for recovery
     bool in_motion;
-    uint current_steps_slot;
+    uint16_t current_steps_slot;
 } Stepper;
 
 typedef struct {
