@@ -244,7 +244,7 @@ void statemachine_step(Dispenser *dis) {
 
         case ST_DISPENSING: {
             if (dis->pills_left == 0) {
-                printf("[FSM] All pills dispensed.\n");
+                printf("[FSM] Dispensing Finish.\n");
                 log_event(dis, "DISPENSING FINISH");
                 dis->state = ST_FINISHED;
                 break;
@@ -285,6 +285,7 @@ void statemachine_step(Dispenser *dis) {
                     printf("[FSM] NO PILL detected. failed=%lu\n",
                            (unsigned long)dis->failed_dispense_count);
                     log_event(dis, "DISPENSE FAIL NO PILLS");
+                    dis->pills_left--;
                     dis->slot_done=(dis->slot_done+1)%PILL_NUMS;
                     save_sm_state(dis);
                     led_blink(dis,5);
