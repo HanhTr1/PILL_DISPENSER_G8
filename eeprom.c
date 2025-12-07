@@ -31,7 +31,7 @@ int eeprom_write(uint16_t addr, uint8_t *data, size_t len) {
     if (write !=2+len) {
         return -1; //error
     }
-    sleep_ms(5);
+    sleep_ms(15);
 
     return 0;
 }

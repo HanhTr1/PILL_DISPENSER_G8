@@ -17,6 +17,7 @@
 #define BUTTON_DEBOUNCE_MS 20
 #define SLOT_OFFSET_STEPS 144
 #define HALF_STEPS 512
+#define RECOVERY_STEPS 50
 
 //pill
 #define PILL_TIME 30000

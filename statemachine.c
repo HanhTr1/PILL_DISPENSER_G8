@@ -28,15 +28,17 @@ bool  restore_from_eeprom(Dispenser *dis){
     }
     dis->state=(DispenserState)s.state;
     dis->pills_left=s.pills_left;
+    dis->slot_done=s.slot_done;
     if (dis->motor){
         dis->motor->current_steps_slot=s.current_steps_slot;
         dis->motor->in_motion=(s.in_motion!=0);
         dis->motor->calibrated=(s.calibrated!=0);
         dis->motor->step_index=s.step_index;
         dis->motor->slot_offset_steps=SLOT_OFFSET_STEPS;
+
     }
-      printf("[FSM] Restored from EEPROM: state=%u, pills_left=%u, steps=%u, in_motion=%u,calibrate=%u,step_index=%u\n",
-           s.state, s.pills_left, s.current_steps_slot, s.in_motion,s.calibrated,s.step_index);
+      printf("[FSM] Restored from EEPROM: state=%u, pills_left=%u, steps=%u, in_motion=%u,calibrate=%u,step_index=%u,slot_done=%u\n",
+           s.state, s.pills_left, s.current_steps_slot, s.in_motion,s.calibrated,s.step_index,s.slot_done);
     return true;
 }
 
@@ -140,12 +142,12 @@ void statemachine_step(Dispenser *dis) {
             }
 
             // EEPROM restore succeeded
-            printf("[FSM] EEPROM restored. state=%d, pills_left=%u, steps=%u, in_motion=%d, calibrated=%d,step_index=%u\n",
+            printf("[FSM] EEPROM restored. state=%d, pills_left=%u, steps=%u, in_motion=%d, calibrated=%d,step_index=%u,slot_done=%u\n",
                    dis->state,
                    dis->pills_left,
                    dis->motor ? dis->motor->current_steps_slot : 0,
                    dis->motor ? dis->motor->in_motion : 0,
-                   dis->motor ? dis->motor->calibrated : 0,dis->motor->step_index);
+                   dis->motor ? dis->motor->calibrated : 0,dis->motor->step_index,dis->slot_done);
 
 
             // 1) First, check if we lost power in the middle of a slot

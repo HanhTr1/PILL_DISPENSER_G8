@@ -303,7 +303,7 @@ void stepper_recovery(Stepper *ptr, Dispenser *dis)
     if (dis) {
            uint8_t slots_to_skip = dis->slot_done;
 
-           uint32_t steps_to_run = (uint32_t)slots_to_skip * HALF_STEPS;
+           uint32_t steps_to_run = (uint32_t)slots_to_skip * HALF_STEPS+RECOVERY_STEPS;
            printf("[Stepper] Skipping %u slots (%lu steps) to reach correct slot.\n",
                   slots_to_skip, (unsigned long)steps_to_run);
 
