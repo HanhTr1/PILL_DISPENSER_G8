@@ -291,8 +291,8 @@ void statemachine_step(Dispenser *dis) {
                 }
 
                 // Schedule next dispensing time
-                dis->next_dispense_time =
-                    make_timeout_time_ms(dis->interval_ms);
+                dis->next_dispense_time = delayed_by_ms(dis->next_dispense_time, dis->interval_ms);
+
             }
             break;
         }
@@ -320,7 +320,7 @@ void statemachine_step(Dispenser *dis) {
 
     if (dis->pills_left > 0) {
         // We still have pills -> go back to "ready to start dispensing".
-        dis->next_dispense_time = make_timeout_time_ms(dis->interval_ms);
+        dis->next_dispense_time = delayed_by_ms(dis->next_dispense_time, dis->interval_ms);
         printf("[FSM] Recovery done, back to WAIT_DISPENSING.\n");
         log_event(dis, "RECOVERY DONE");
         dis->state = ST_DISPENSING;
