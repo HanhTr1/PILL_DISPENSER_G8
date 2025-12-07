@@ -112,7 +112,7 @@ void statemachine_init(Dispenser *dis,
     dis->failed_dispense_count = 0;
 
     // First target time for dispensing
-    dis->next_dispense_time = make_timeout_time_ms(interval_ms);
+    // dis->next_dispense_time = make_timeout_time_ms(interval_ms);
 }
 
 void statemachine_step(Dispenser *dis) {
@@ -239,6 +239,7 @@ void statemachine_step(Dispenser *dis) {
 
         case ST_WAIT_DISPENSING:
             // Second button press -> start dispensing loop
+
             wait_start_handler(dis);
             break;
 
@@ -321,7 +322,7 @@ void statemachine_step(Dispenser *dis) {
 
     if (dis->pills_left > 0) {
         // We still have pills -> go back to "ready to start dispensing".
-        dis->next_dispense_time = delayed_by_ms(dis->next_dispense_time, dis->interval_ms);
+        dis->next_dispense_time = make_timeout_time_ms(dis->interval_ms);
         printf("[FSM] Recovery done, back to WAIT_DISPENSING.\n");
         log_event(dis, "RECOVERY DONE");
         dis->state = ST_DISPENSING;
