@@ -39,6 +39,8 @@ typedef struct {
     uint8_t in_motion;
     uint8_t calibrated;
     uint8_t not_calibrated;
+    uint8_t slot_done;
+    uint8_t not_slot_done;
 } simple_state_t;
 
 

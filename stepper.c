@@ -167,9 +167,9 @@ void stepper_step_one_slot(Stepper *ptr, Dispenser *dis)
     while (after_recovery--){
         step(ptr,+1);
         ptr->current_steps_slot++;
-        // if (ptr->current_steps_slot%2==0) {
-        //     save_sm_state(dis);
-        // }
+        if (ptr->current_steps_slot%2==0) {
+            save_sm_state(dis);
+        }
     }
 
     // Finished one full slot: we are exactly at the new slot boundary
@@ -279,7 +279,7 @@ void stepper_recovery(Stepper *ptr, Dispenser *dis)
             break;
         }
 
-        if (guard > 4000) {  // Safety guard to avoid infinite loop
+        if (guard > 10000) {  // Safety guard to avoid infinite loop
             printf("[Stepper] ERROR: Cannot find index edge!\n");
             motor_off(ptr);
             return;
@@ -299,6 +299,19 @@ void stepper_recovery(Stepper *ptr, Dispenser *dis)
     } else {
         printf("[Stepper] slot_offset_steps == 0, skip offset.\n");
     }
+
+    if (dis) {
+           uint8_t slots_to_skip = dis->slot_done;
+
+           uint32_t steps_to_run = (uint32_t)slots_to_skip * HALF_STEPS;
+           printf("[Stepper] Skipping %u slots (%lu steps) to reach correct slot.\n",
+                  slots_to_skip, (unsigned long)steps_to_run);
+
+           while (steps_to_run--) {
+               step(ptr, +1);
+           }
+       }
+
 
     // 4) Reset state
     ptr->current_steps_slot = 0;

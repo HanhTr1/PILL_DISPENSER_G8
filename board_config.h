@@ -70,7 +70,7 @@ typedef struct {
     uint total_dispense_count;
     uint failed_dispense_count;
     absolute_time_t next_dispense_time;
-
+    uint8_t slot_done;
     bool is_lorawan_connected;
 } Dispenser;
 
