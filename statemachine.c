@@ -57,24 +57,35 @@ static void format_timestamp(char* buf, size_t len) {
 }
 
 // Log + LoRa helper: add timestamp + (optional) day index
-static void log_event(Dispenser* dis, const char* event) {
-    char ts[20]; // "YYYY-MM-DD HH:MM:SS" -> 19 + '\0'
-    char line[LOG_STRING_MAX_LEN]; // final log string to store in EEPROM
+
+static void log_event(Dispenser *dis, const char *event)
+{
+    char ts[20];
+    char line[LOG_STRING_MAX_LEN];
 
     format_timestamp(ts, sizeof(ts));
 
     if (dis) {
-        // If pills are dispensed once per day: day index = PILL_NUMS - pills_left + 1
-        uint8_t day = 0;
-        if (PILL_NUMS >= dis->pills_left) {
-            day = (uint8_t)(PILL_NUMS - dis->pills_left + 1);
-        }
+        // Only show "Day X" AFTER dispensing has started
+        bool day_started =
+            (dis->slot_done > 0) ||
+            (dis->total_dispense_count > 0) ||
+            (dis->failed_dispense_count > 0);
 
-        // Example: "2025-12-07 13:42:05 Day 3 DISPENSE_OK"
-        snprintf(line, sizeof(line), "%s Day %u %s", ts, day, event);
-    }
-    else {
-        // No dispenser context (e.g. boot before state restored)
+
+        if (day_started) {
+            uint8_t day = 0;
+            if (PILL_NUMS >= dis->pills_left) {
+                day = (uint8_t)(PILL_NUMS - dis->pills_left + 1);
+            }
+            snprintf(line, sizeof(line), "%s Day %u %s", ts, day, event);
+        } else {
+            // Before any dispensing: don't print Day
+            snprintf(line, sizeof(line), "%s %s", ts, event);
+        }
+    } else {
+        // No dispenser context
+
         snprintf(line, sizeof(line), "%s %s", ts, event);
     }
 
@@ -179,7 +190,7 @@ void statemachine_step(Dispenser* dis) {
             }
             if (need_recovery) {
                 printf("[FSM] Detected mid-slot interruption -> ST_RECOVERY\n");
-                log_event(dis, "POWER LOSS MID-SLOT, ENTER RECOVERY");
+                log_event(dis, "POWER LOSS,RECOVERY");
                 dis->state = ST_RECOVERY;
                 break;
             }
@@ -210,7 +221,7 @@ void statemachine_step(Dispenser* dis) {
                 stepper_apply_slot_offset(dis->motor);
 
                 if (!dis->motor->calibrated) {
-                    printf("[FSM] Calibration failed. Back to WAIT_CALIBRATION.\n");
+                    printf("[FSM] Calibration failed.Back to WAIT_CALIBRATION.\n");
                     log_event(dis,"CALIBRATED FAIL");
                     dis->state = ST_WAIT_CALIBRATION;
                     break;
