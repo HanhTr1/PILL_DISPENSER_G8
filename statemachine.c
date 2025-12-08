@@ -117,6 +117,7 @@ void statemachine_init(Dispenser* dis,
 }
 
 void statemachine_step(Dispenser* dis) {
+
     switch (dis->state) {
     case ST_BOOT: {
         printf("[FSM] Booting system...\n");
@@ -145,13 +146,15 @@ void statemachine_step(Dispenser* dis) {
             }
 
             send_status_to_lorawan(dis, "BOOT_DONE & LORAWAN_CONNECTED!");
+
+
             bool ok = restore_from_eeprom(dis);
 
             if (!ok) {
-                // No valid EEPROM => fresh boot: go to LoRa connect first
+                // No valid EEPROM => fresh boot: go to wait for calib
                 printf("[FSM] No valid EEPROM data -> fresh boot.\n");
                 log_event(dis,"NO VALID EEPROM DATA");
-                dis->state = ST_LORA_CONNECT;
+                dis->state = ST_WAIT_CALIBRATION;
                 break;
             }
 
@@ -164,6 +167,7 @@ void statemachine_step(Dispenser* dis) {
                    dis->motor ? dis->motor->calibrated : 0,dis->motor->step_index,dis->slot_done);
 
             bool need_recovery=false;
+
             // 1) First, check if we lost power in the middle of a slot
             if (dis->motor) {
                 if (dis->motor->in_motion) {
@@ -192,9 +196,9 @@ void statemachine_step(Dispenser* dis) {
             break;
     }
 
-
         case ST_WAIT_CALIBRATION:
             // First button press -> go to calibration state
+            send_status_to_lorawan(dis, "WAIT FOR CALIBRATION!");
             wait_calib_button_handler(dis);
             break;
 
@@ -223,7 +227,7 @@ void statemachine_step(Dispenser* dis) {
 
         case ST_WAIT_DISPENSING:
             // Second button press -> start dispensing loop
-
+            send_status_to_lorawan(dis, "WAIT FOR DISPENSING!");
             wait_dispensing_button_handler(dis);
             break;
 
