@@ -161,7 +161,7 @@ void statemachine_step(Dispenser *dis) {
                 // No valid EEPROM => fresh boot: go to LoRa connect first
                 printf("[FSM] No valid EEPROM data -> fresh boot.\n");
                 log_event(dis,"NO VALID EEPROM DATA");
-                dis->state = ST_LORA_CONNECT;
+                dis->state = ST_WAIT_CALIBRATION;
                 break;
             }
 
