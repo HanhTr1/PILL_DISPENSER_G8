@@ -14,6 +14,8 @@ static Stepper         g_stepper;
 static pillSensorState g_sensor;
 static Dispenser       g_dispenser;
 static datetime_t t;
+
+extern volatile bool need_to_save ;
 // Single global GPIO IRQ callback for RP2040
 static void global_gpio_irq(uint gpio, uint32_t events) {
     // Stepper index sensor (optical fork)
@@ -22,7 +24,7 @@ static void global_gpio_irq(uint gpio, uint32_t events) {
     }
 
     // Pill hit sensor (piezo)
-    pill_sensor_handle_irq(&g_sensor, gpio, events);
+    pill_sensor_handle_irq(&g_sensor, gpio, events,&g_dispenser);
 }
 
 int main(void) {

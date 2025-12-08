@@ -7,22 +7,23 @@
 #include"pill_sensor.h"
 #include<math.h>
 #include <time.h>
+#include "board_config.h"
 #include<stdio.h>
 
-void pill_sensor_handle_irq(pillSensorState *ptr, uint gpio, uint32_t events) {
-    if (!ptr) return;
+
+
+
+void pill_sensor_handle_irq(pillSensorState *ptr, uint gpio, uint32_t events,Dispenser *dis) {
+    if (!ptr||!dis) return;
 
     if (gpio == PILL_SENSOR_PIN && (events & GPIO_IRQ_EDGE_FALL)) {
         ptr->hit_flag = true;
         ptr->last_edge_count++;
-
-                // DEBUG: to see the irq work
-        // printf("[IRQ] pill sensor edge, count=%lu\n",
-        //                (unsigned long)ptr->last_edge_count);
-
+        if (!dis->pill_hit){
+            dis->pill_hit=true;
+        }
     }
 }
-
 void pill_sensor_init(pillSensorState*ptr) {
         gpio_init(PILL_SENSOR_PIN);
         gpio_set_dir(PILL_SENSOR_PIN,false);
@@ -55,7 +56,7 @@ void pill_sensor_update(pillSensorState*ptr) {
         ptr->pill_fall_time = window_ms;
 }
 
-bool pill_sensor_is_ready(pillSensorState *ptr) {
+bool pill_sensor_is_ready(pillSensorState *ptr,Dispenser *dis) {
     // We do NOT clear last_edge_count here, because edges may have
     // happened while the motor was rotating before this call.
     ptr->last_hit = false;
@@ -67,6 +68,11 @@ bool pill_sensor_is_ready(pillSensorState *ptr) {
     // If at least one edge was seen since the last check, we treat it as a hit.
     if (ptr->last_edge_count > 0 || ptr->hit_flag) {
         ptr->last_hit = true;
+
+    }
+    if (dis) {
+        dis->pill_hit = true;
+        save_sm_state(dis);
     }
 
     // Reset flags/counters for the next pill

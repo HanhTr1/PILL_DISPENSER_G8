@@ -4,6 +4,7 @@
 #include"pill_sensor.h"
 #include "pico/stdlib.h"
 
+
 //pin
 #define SW_0 9
 #define SW_2 7
@@ -46,7 +47,7 @@ typedef enum {
     ST_FINISHED                 //finished
 } DispenserState;
 
-typedef struct {
+typedef struct Stepper{
     uint pins[4];
     uint sensor_pin;
     int  step_index;
@@ -58,7 +59,7 @@ typedef struct {
     bool in_motion;
 } Stepper;
 
-typedef struct {
+typedef struct Dispenser{
     DispenserState state;
     uint button_pin;
     uint button_pin2;

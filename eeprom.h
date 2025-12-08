@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "hardware/i2c.h"
-#include "board_config.h"
+
 
 #define I2C_PORT i2c0
 #define I2C_SDA_PIN 16
@@ -23,11 +23,13 @@
 #define LOG_START_ADDR 0
 #define LOG_ENTRY_SIZE 64
 #define LOG_AREA_SIZE 2048
-#define LOG_MAX_ENTRIES 32
+#define LOG_MAX_ENTRIES 200
 #define COMMAND_SIZE 8
 #define LOG_STRING_MAX_LEN 61
 
 #define STATE_ADDR 0X0800
+
+typedef struct Dispenser Dispenser;
 
 typedef struct {
     uint8_t state;       // FSM state
