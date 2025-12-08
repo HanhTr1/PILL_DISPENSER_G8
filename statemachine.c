@@ -76,7 +76,7 @@ static void log_event(Dispenser *dis, const char *event)
         if (day_started) {
             uint8_t day = 0;
             if (PILL_NUMS >= dis->pills_left) {
-                day = (uint8_t)(PILL_NUMS - dis->pills_left + 1);
+                day = (uint8_t)(PILL_NUMS - dis->pills_left);
             }
             snprintf(line, sizeof(line), "%s Day %u %s", ts, day, event);
         } else {

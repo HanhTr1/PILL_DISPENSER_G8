@@ -68,7 +68,7 @@ bool lorawan_join(void) {
     */
 
     printf("[LORA] Joining network......\n");
-    if (!lorawan_send_command("AT+JOIN\r\n", "+JOIN: Done", 17000)) {   //longest!!!
+    if (!lorawan_send_command("AT+JOIN\r\n", "+JOIN: Network joined", 20000)) {   //longest!!!
         printf("[LORA] JOIN timed out or failed.\n");
         return false;
     }
@@ -95,7 +95,7 @@ bool lorawan_send_message(const char *message) {
     +MSG: RXWIN214, RSSI -106, SNR 4
     +MSG: Done
     */
-    if (lorawan_send_command(cmd, "+MSG: Done", 7000)) { //7s
+    if (lorawan_send_command(cmd, "+MSG: Done", 10000)) { //7s
         return true;
     }
 
@@ -133,7 +133,7 @@ bool uart_readable_timeout(int uart_nr, char* buffer, int max_len, uint32_t time
 
 bool handle_lorawan(void) {
 
-    for (int attempt = 0; attempt < LORA_JOIN_MAX_ATTEMPTS; attempt++) {
+    for (int attempt = 1; attempt < LORA_JOIN_MAX_ATTEMPTS; attempt++) {
         printf("[LORA] LoRa join attempt %d/%d\n", attempt, LORA_JOIN_MAX_ATTEMPTS);
 
         if (lorawan_join()) {

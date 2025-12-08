@@ -41,9 +41,9 @@ int main(void) {
         rtc_set_datetime(&t);
     }
     // ---for debug---
-     // erase_log();
-     // uint8_t zero=0;
-     // eeprom_write(STATE_ADDR,&zero,1);
+     //erase_log();
+     //uint8_t zero=0;
+     //eeprom_write(STATE_ADDR,&zero,1);
     // -------- Stepper initialization --------
     g_stepper.pins[0]    = 2;
     g_stepper.pins[1]    = 3;
