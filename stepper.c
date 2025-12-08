@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "eeprom.h"
 
-#define STEP_DELAY_MS      3
+#define STEP_DELAY_MS      2
 #define CALIB_REV_COUNT    3
 #define MIN_STEPS_VALID    50      // Minimum steps between index hits to be considered a full revolution
 #define MAX_STEPS_GUARD    10000   // Safety upper bound to avoid infinite loops
@@ -61,7 +61,7 @@ void stepper_init(Stepper *ptr) {
     ptr->slot_offset_steps = 0;
 
     // For power-loss recovery
-    ptr->current_steps_slot = 0;
+
     ptr->in_motion          = false;
 }
 
@@ -159,28 +159,23 @@ void stepper_step_one_slot(Stepper *ptr, Dispenser *dis)
 
     uint16_t STEPS_PER_SLOT = HALF_STEPS;
     ptr->in_motion         = true;
-    ptr->current_steps_slot = 0;
+    save_sm_state(dis);
 
     printf("[Stepper] step_one_slot: target_steps=%u\n", STEPS_PER_SLOT);
     stepper_lock_phase(ptr);
     uint16_t after_recovery=STEPS_PER_SLOT;
-    while (after_recovery--){
+    while (after_recovery--) {
         step(ptr,+1);
-        ptr->current_steps_slot++;
-        if (ptr->current_steps_slot%2==0) {
-            save_sm_state(dis);
-        }
     }
 
     // Finished one full slot: we are exactly at the new slot boundary
-    ptr->current_steps_slot = 0;
+    // ptr->current_steps_slot = 0;
     ptr->in_motion          = false;
+
     motor_off(ptr);
 
     // Save final “slot boundary” state
-    if (dis) {
-        save_sm_state(dis);
-    }
+    save_sm_state(dis);
 }
 
 // Apply fixed offset from index gap to pill-slot 0
@@ -202,46 +197,6 @@ void stepper_apply_slot_offset(Stepper *ptr) {
     }
     motor_off(ptr);
 }
-
-// Power-loss recovery: if we lost power in the middle of a slot,
-// we rewind back to the previous slot boundary (CCW), without dispensing.
-// void stepper_recovery(Stepper *ptr, Dispenser *dis) {
-//     if (!ptr) return;
-//
-//     // If not flagged as in-motion or no partial steps recorded,
-//     // there is nothing to recover.
-//     if (!ptr->in_motion || ptr->current_steps_slot == 0) {
-//         printf("[Stepper] No partial slot to recover.\n");
-//         return;
-//     }
-//     printf("[Stepper] Recovery Start. Recorded steps: %u, Phase Index: %u\n",
-//            ptr->current_steps_slot, ptr->step_index);
-//
-//     // 2. Lock the phase (Prevents startup jitter)
-//     stepper_lock_phase(ptr);
-//     // if (ptr->current_steps_slot > HALF_STEPS) {
-//     //     ptr->current_steps_slot = HALF_STEPS;
-//     // }
-//
-//
-//     uint16_t rollback = ptr->current_steps_slot;
-//     printf("[Stepper] Recovering slot (rewind CCW): already=%u, rollback=%u\n",
-//            ptr->current_steps_slot, rollback);
-//
-//     // Rewind back to the previous slot boundary (CCW).
-//     while (rollback--) {
-//         step(ptr,-1);
-//     }
-//
-//     ptr->current_steps_slot = 0;
-//     ptr->in_motion          = false;
-//     motor_off(ptr);
-//
-//     if (dis) {
-//         // Save the recovered "slot boundary" state
-//         save_sm_state(dis);
-//     }
-// }
 // Power-loss recovery: re-align to the mechanical reference using the optical index,
 // then apply the fixed slot offset so that we end up at a true slot boundary.
 void stepper_recovery(Stepper *ptr, Dispenser *dis)
@@ -258,8 +213,8 @@ void stepper_recovery(Stepper *ptr, Dispenser *dis)
         return;
     }
 
-    printf("[Stepper] Recovery Start. recorded_steps=%u, phase_index=%u\n",
-           ptr->current_steps_slot, ptr->step_index);
+    printf("[Stepper] Recovery Start. phase_index=%u\n",
+            ptr->step_index);
 
     // 1) Lock current phase to avoid startup jitter
     stepper_lock_phase(ptr);
@@ -314,7 +269,7 @@ void stepper_recovery(Stepper *ptr, Dispenser *dis)
 
 
     // 4) Reset state
-    ptr->current_steps_slot = 0;
+
     ptr->in_motion          = false;
     motor_off(ptr);
 

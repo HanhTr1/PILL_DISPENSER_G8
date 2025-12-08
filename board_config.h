@@ -55,7 +55,6 @@ typedef struct {
     int  slot_offset_steps;
     //for recovery
     bool in_motion;
-    uint16_t current_steps_slot;
 } Stepper;
 
 typedef struct {

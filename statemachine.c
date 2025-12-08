@@ -30,7 +30,7 @@ bool  restore_from_eeprom(Dispenser *dis){
     dis->pills_left=s.pills_left;
     dis->slot_done=s.slot_done;
     if (dis->motor){
-        dis->motor->current_steps_slot=s.current_steps_slot;
+
         dis->motor->in_motion=(s.in_motion!=0);
         dis->motor->calibrated=(s.calibrated!=0);
         dis->motor->step_index=s.step_index;
@@ -125,12 +125,28 @@ void statemachine_step(Dispenser *dis) {
 
             // Give USB some time to enumerate and allow opening the serial monitor
             sleep_ms(3000);
+            dis->state=ST_LORA_CONNECT;
+        }
 
-// Wait here until SW_0 (START button) is pressed
-    //         while (gpio_get(SW_0)) {
-    // // Optionally print some debug info every 200 ms if needed
-    //          sleep_ms(200);
-    //         }
+        case ST_LORA_CONNECT:{
+            printf("[FSM] Connecting to LoRaWAN...\n");
+            lorawan_init();
+
+            bool lora_connected = handle_lorawan();
+
+            if (lora_connected) {
+                printf("[FSM] LORA connection is done!!!\n");
+                lorawan_send_message("Group 8 LoraWan Connected!");
+                dis->is_lorawan_connected = true;
+                log_event(dis, "BOOT DONE LORA OK");
+            }
+            else {
+                printf("Can't connect to LoRaWan. Continue to run without!\n");
+                dis->is_lorawan_connected = false;
+                log_event(dis, "BOOT DONE LORA FAIL");
+            }
+
+            send_status_to_lorawan(dis, "BOOT_DONE & LORAWAN_CONNECTED!");
             bool ok = restore_from_eeprom(dis);
 
             if (!ok) {
@@ -142,69 +158,41 @@ void statemachine_step(Dispenser *dis) {
             }
 
             // EEPROM restore succeeded
-            printf("[FSM] EEPROM restored. state=%d, pills_left=%u, steps=%u, in_motion=%d, calibrated=%d,step_index=%u,slot_done=%u\n",
+
+            printf("[FSM] EEPROM restored. state=%d, pills_left=%u,in_motion=%d, calibrated=%d,step_index=%u,slot_done=%u\n",
                    dis->state,
                    dis->pills_left,
-                   dis->motor ? dis->motor->current_steps_slot : 0,
                    dis->motor ? dis->motor->in_motion : 0,
                    dis->motor ? dis->motor->calibrated : 0,dis->motor->step_index,dis->slot_done);
 
-
+            bool need_recovery=false;
             // 1) First, check if we lost power in the middle of a slot
-            if (dis->motor &&
-                dis->motor->in_motion &&
-                dis->motor->current_steps_slot > 0)
-            {
-                printf("[FSM] Mid-slot power loss -> ST_RECOVERY\n");
-                log_event(dis, "POWER LOSS DURING TURNING");
+            if (dis->motor) {
+                if (dis->motor->in_motion) {
+                    need_recovery=true;
+                }
+                else if (dis->slot_done!=0&&dis->slot_done<PILL_NUMS) {
+                    need_recovery=true;
+                }
+            }
+            if (need_recovery) {
+                printf("[FSM] Detected mid-slot interruption -> ST_RECOVERY\n");
+                log_event(dis, "POWER LOSS MID-SLOT, ENTER RECOVERY");
                 dis->state = ST_RECOVERY;
                 break;
             }
-
-            // 2) Not mid-slot: check if the motor was calibrated or not
+            // === 2. No recovery needed: check calibration status ===
             if (!dis->motor || !dis->motor->calibrated) {
                 printf("[FSM] Motor not calibrated -> ST_WAIT_CALIBRATION\n");
                 log_event(dis, "MOTOR NOT CALIBRATED");
                 dis->state = ST_WAIT_CALIBRATION;
                 break;
             }
-
-            // 3) Motor is calibrated, last state was DISPENSING
-            if (dis->state == ST_DISPENSING) {
-                printf("[FSM] Power loss after dispensing -> resume ST_DISPENSING\n");
-                // dis->state is already ST_DISPENSING
-                log_event(dis, "POWER LOSS AFTER TURNING");
-                break;
-            }
-
-            // 4) Calibrated and idle
-            printf("[FSM] Calibrated and idle -> ST_WAIT_DISPENSING\n");
+            // === 3. Motor calibrated and no interrupted motion: ready to wait for dispensing ===
+            printf("[FSM] System ready -> ST_WAIT_DISPENSING\n");
             dis->state = ST_WAIT_DISPENSING;
             break;
     }
-
-        case ST_LORA_CONNECT:
-        printf("[FSM] Connecting to LoRaWAN...\n");
-        lorawan_init();
-
-        bool lora_connected = handle_lorawan();
-
-        if (lora_connected) {
-            printf("[FSM] LORA connection is done!!!\n");
-            lorawan_send_message("Group 8 LoraWan Connected!");
-            dis->is_lorawan_connected = true;
-            log_event(dis, "BOOT DONE LORA OK");
-        }
-        else {
-            printf("Can't connect to LoRaWan. Continue to run without!\n");
-            dis->is_lorawan_connected = false;
-            log_event(dis, "BOOT DONE LORA FAIL");
-        }
-
-        send_status_to_lorawan(dis, "BOOT_DONE & LORAWAN_CONNECTED!");
-        dis->state = ST_WAIT_CALIBRATION;
-
-        break;
 
 
         case ST_WAIT_CALIBRATION:
@@ -225,8 +213,6 @@ void statemachine_step(Dispenser *dis) {
                     dis->state = ST_WAIT_CALIBRATION;
                     break;
                 }
-
-                dis->motor->current_steps_slot = 0;
                 dis->motor->in_motion = false;
                 dis->motor->calibrated = true;
 
@@ -314,7 +300,7 @@ void statemachine_step(Dispenser *dis) {
         dis->state = ST_WAIT_CALIBRATION;
         break;
     }
-    printf("current steps %u",dis->motor->current_steps_slot);
+
     // 1) rewind partial slot and recalibrate (inside stepper_recovery)
     stepper_recovery(dis->motor, dis);
     // 2) After recovery, DO NOT dispense pills, DO NOT check pill_sensor.
