@@ -16,6 +16,8 @@
 #define LED_BLINK_US 500000
 #define BUTTON_DEBOUNCE_MS 20
 #define SLOT_OFFSET_STEPS 144
+#define HALF_STEPS 512
+#define RECOVERY_STEPS 50
 
 //pill
 #define PILL_TIME 30000
@@ -31,6 +33,7 @@
 #define LORA_JOIN_MAX_ATTEMPTS 5
 #define  LORA_RESPONSE_LEN 128
 
+#define LORA_MAX_PAYLOAD_LEN 50
 
 typedef enum {
     ST_BOOT,
@@ -51,6 +54,8 @@ typedef struct {
     bool calibrated;
     volatile bool index_hit;
     int  slot_offset_steps;
+    //for recovery
+    bool in_motion;
 } Stepper;
 
 typedef struct {
@@ -66,7 +71,8 @@ typedef struct {
     uint total_dispense_count;
     uint failed_dispense_count;
     absolute_time_t next_dispense_time;
-
+    uint8_t slot_done;
+    bool is_lorawan_connected;
 } Dispenser;
 
 #endif //PILL_DISPENSER_BOARD_CONFIG_H

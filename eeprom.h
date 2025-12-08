@@ -33,7 +33,14 @@ typedef struct {
     uint8_t state;       // FSM state
     uint8_t not_state;   // ~state
     uint8_t pills_left;
-    uint8_t not_pills_left; // ~pills_left
+    uint8_t not_pills_left;// ~pills_left
+    uint16_t current_steps_slot;
+    uint16_t step_index;
+    uint8_t in_motion;
+    uint8_t calibrated;
+    uint8_t not_calibrated;
+    uint8_t slot_done;
+    uint8_t not_slot_done;
 } simple_state_t;
 
 

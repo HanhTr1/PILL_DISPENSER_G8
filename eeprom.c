@@ -31,7 +31,7 @@ int eeprom_write(uint16_t addr, uint8_t *data, size_t len) {
     if (write !=2+len) {
         return -1; //error
     }
-    sleep_ms(5);
+    sleep_ms(15);
 
     return 0;
 }
@@ -151,14 +151,25 @@ void read_log() {
 
 }
 int save_state(simple_state_t *s) {
-    simple_state_t buf;
-    buf.state = s->state;
-    buf.not_state = ~s->state;
-    buf.pills_left = s->pills_left;
-    buf.not_pills_left = ~s->pills_left;
+    simple_state_t buf= *s;
+
+    buf.state          =s->state;
+    buf.not_state      =~buf.state;
+    buf.pills_left     =s->pills_left;
+    buf.not_pills_left =~buf.pills_left;
+
+    // motor progress
+    buf.current_steps_slot = s->current_steps_slot;
+    buf.in_motion          = s->in_motion;
+    buf.step_index       =s->step_index;
+    buf.calibrated       = s->calibrated;
+    buf.not_calibrated       =~buf.calibrated;
+    buf.slot_done        =s->slot_done;
+    buf.not_slot_done     =~buf.slot_done;
 
     return eeprom_write(STATE_ADDR, (uint8_t*)&buf, sizeof(buf));
 }
+
 int load_state(simple_state_t *s) {
     simple_state_t buf;
     if (eeprom_read(STATE_ADDR, (uint8_t*)&buf, sizeof(buf)) != 0) {
@@ -166,27 +177,23 @@ int load_state(simple_state_t *s) {
     }
 
 
-    if (buf.state != (uint8_t)(~buf.not_state) ||
-        buf.pills_left != (uint8_t)(~buf.not_pills_left)) {
-        return -2; // data error
-        }
+    if (buf.state         != (uint8_t)~buf.not_state      ||
+       buf.pills_left    != (uint8_t)~buf.not_pills_left ||
+       buf.calibrated    != (uint8_t)~buf.not_calibrated) {
+        return -2; //  data error
+       }
 
     memcpy(s, &buf, sizeof(buf));
     return 0; // OK
 }
 void save_sm_state(Dispenser *dis) {
-    simple_state_t s;
-    s.state = dis->state;
-    s.not_state = ~dis->state;
-    s.pills_left = dis->pills_left;
-    s.not_pills_left = ~dis->pills_left;
+     if (!dis || !dis->motor) return;
+    simple_state_t s={0};
+    s.state=dis->state;
+    s.pills_left=dis->pills_left;
+    s.in_motion = dis->motor->in_motion?1:0;
+    s.calibrated=dis->motor->calibrated?1:0;
+    s.step_index= dis->motor->step_index;
+    s.slot_done=dis->slot_done;
     save_state(&s);
 }
-
-
-
-
-
-
-
-
