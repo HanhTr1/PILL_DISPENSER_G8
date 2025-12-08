@@ -81,7 +81,7 @@ void stepper_calibrate(Stepper *ptr,Dispenser*dis) {
     ptr->calibrated    = false;
     ptr->steps_per_rev = 0;
     ptr->index_hit     = false;
-
+    save_sm_state(dis);
     // 1) Make sure we are not starting inside the index gap
     if (gpio_get(ptr->sensor_pin) == 0) {
         int guard = 0;
@@ -254,18 +254,20 @@ void stepper_recovery(Stepper *ptr, Dispenser *dis)
     } else {
         printf("[Stepper] slot_offset_steps == 0, skip offset.\n");
     }
+    uint8_t slots_to_skip = dis->slot_done;
 
-    if (dis) {
-           uint8_t slots_to_skip = dis->slot_done;
+    uint32_t steps_to_run = (uint32_t)slots_to_skip * HALF_STEPS+RECOVERY_STEPS;
+    if (dis->pill_hit) {
+        steps_to_run += HALF_STEPS;
+        printf("[Stepper] Pill dropped early -> advancing one extra slot.\n");
+    }
+    printf("[Stepper] Advancing %u slots (%lu half-steps) to reach correct slot.\n",
+        slots_to_skip + (dis->pill_hit ? 1 : 0),
+        (unsigned long)steps_to_run);
 
-           uint32_t steps_to_run = (uint32_t)slots_to_skip * HALF_STEPS+RECOVERY_STEPS;
-           printf("[Stepper] Skipping %u slots (%lu steps) to reach correct slot.\n",
-                  slots_to_skip, (unsigned long)steps_to_run);
-
-           while (steps_to_run--) {
-               step(ptr, +1);
-           }
-       }
+    while (steps_to_run--) {
+        step(ptr, +1);  // CW
+    }
 
 
     // 4) Reset state

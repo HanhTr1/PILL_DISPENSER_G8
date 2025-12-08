@@ -39,7 +39,7 @@ bool lorawan_join(void) {
     }
 
     printf("[LORA] Setting APPKEY......\n");
-    if (!lorawan_send_command("AT+KEY=APPKEY,\"c695805d0cf7cd4ee24b11be3055659e\"\r\n", "+KEY:", 500)) {
+    if (!lorawan_send_command("AT+KEY=APPKEY,\"f3dfcce7d42a96b46b0a014516d8ff3f\"\r\n", "+KEY:", 500)) {
         return false;
     }
 

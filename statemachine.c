@@ -29,6 +29,7 @@ bool  restore_from_eeprom(Dispenser *dis){
     dis->state=(DispenserState)s.state;
     dis->pills_left=s.pills_left;
     dis->slot_done=s.slot_done;
+    dis->pill_hit=s.pill_hit;
     if (dis->motor){
 
         dis->motor->in_motion=(s.in_motion!=0);
@@ -176,6 +177,7 @@ static void log_event(Dispenser *dis, const char *event) {
                        dis->motor ? dis->motor->calibrated : 0,dis->motor->step_index,dis->slot_done);
 
                 bool need_recovery=false;
+
                 // 1) First, check if we lost power in the middle of a slot
                 if (dis->motor) {
                     if (dis->motor->in_motion) {
@@ -255,11 +257,13 @@ static void log_event(Dispenser *dis, const char *event) {
 
                     // 1) Rotate wheel by one slot
                     if (dis->motor) {
+                        dis->motor->in_motion = true;
                         stepper_step_one_slot(dis->motor,dis);
                     }
 
                     // 2) Wait within the pre-computed time window for a piezo hit
                     bool hit = false;
+                    dis->pill_hit=false;
                     if (dis->sensor) {
                         hit = pill_sensor_is_ready(dis->sensor);
                     }
@@ -267,9 +271,9 @@ static void log_event(Dispenser *dis, const char *event) {
                     if (hit) {
                         // Successful dispense: increase pill count and decrease remaining pills
                         dis->total_dispense_count++;
+                        dis->pill_hit=true;
                         if (dis->pills_left > 0) {
                             dis->pills_left--;
-
                         }
                         printf("[FSM] PILL DETECTED. total=%lu, left=%u\n",
                                (unsigned long)dis->total_dispense_count,
@@ -280,6 +284,7 @@ static void log_event(Dispenser *dis, const char *event) {
                     } else {
                         // No hit within the window: count as a failed dispense
                         dis->failed_dispense_count++;
+                        dis->pill_hit=false;
                         printf("[FSM] NO PILL detected. failed=%lu\n",
                                (unsigned long)dis->failed_dispense_count);
                         log_event(dis, "DISPENSE FAIL NO PILLS");

@@ -41,6 +41,7 @@ typedef struct {
     uint8_t not_calibrated;
     uint8_t slot_done;
     uint8_t not_slot_done;
+    uint8_t pill_hit;
 } simple_state_t;
 
 

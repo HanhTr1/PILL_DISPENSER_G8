@@ -73,6 +73,7 @@ typedef struct {
     absolute_time_t next_dispense_time;
     uint8_t slot_done;
     bool is_lorawan_connected;
+    bool pill_hit;
 } Dispenser;
 
 #endif //PILL_DISPENSER_BOARD_CONFIG_H

@@ -166,6 +166,7 @@ int save_state(simple_state_t *s) {
     buf.not_calibrated       =~buf.calibrated;
     buf.slot_done        =s->slot_done;
     buf.not_slot_done     =~buf.slot_done;
+    buf.pill_hit        =s->pill_hit;
 
     return eeprom_write(STATE_ADDR, (uint8_t*)&buf, sizeof(buf));
 }
@@ -195,6 +196,7 @@ void save_sm_state(Dispenser *dis) {
     s.calibrated=dis->motor->calibrated?1:0;
     s.step_index= dis->motor->step_index;
     s.slot_done=dis->slot_done;
+    s.pill_hit=dis->pill_hit;
     save_state(&s);
 }
 
