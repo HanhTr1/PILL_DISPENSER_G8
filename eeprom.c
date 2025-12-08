@@ -191,7 +191,6 @@ void save_sm_state(Dispenser *dis) {
     simple_state_t s={0};
     s.state=dis->state;
     s.pills_left=dis->pills_left;
-    s.current_steps_slot = dis->motor->current_steps_slot;
     s.in_motion = dis->motor->in_motion?1:0;
     s.calibrated=dis->motor->calibrated?1:0;
     s.step_index= dis->motor->step_index;
