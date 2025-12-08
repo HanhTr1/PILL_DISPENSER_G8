@@ -72,7 +72,7 @@ static void log_event(Dispenser *dis, const char *event) {
         if (day_started) {
             uint8_t day = 0;
             if (dis->pills_left<=PILL_NUMS) {
-                day = (uint8_t)(PILL_NUMS - dis->pills_left + 1);
+                day = (uint8_t)(PILL_NUMS - dis->pills_left );
             }
             if (day==0||day>PILL_NUMS) {
                 // Before any dispensing: don't print Day
