@@ -4,7 +4,7 @@
 #include "hardware/gpio.h"
 
 
-void wait_calib_button_handler(Dispenser* dis) {
+void wait_button_handler(Dispenser* dis) {
     static uint64_t last_blink = 0;
     static bool led_state = false;
 
@@ -26,12 +26,15 @@ void wait_calib_button_handler(Dispenser* dis) {
     }
 }
 
-void wait_dispensing_button_handler(Dispenser* dis) {
+void wait_start_handler(Dispenser* dis) {
     gpio_put(dis->led_pin, 1);
 
     if (gpio_get(dis->button_pin2) == 0) {
         printf("Button pressed. Start dispensing...\n");
-
+        dis->next_dispense_time = make_timeout_time_ms(dis->interval_ms);
+        dis->state = ST_DISPENSING;
+        printf("[FSM] START pressed -> enter ST_DISPENSING, first after %u ms\n",
+               dis->interval_ms);
         gpio_put(dis->led_pin, 0);
         dis->state = ST_DISPENSING;
 
@@ -40,4 +43,13 @@ void wait_dispensing_button_handler(Dispenser* dis) {
         }
     }
 
+}
+
+void led_blink(Dispenser*dis,int time) {
+    for (int i=0;i<=time;i++) {
+        gpio_put(dis->led_pin, 1);
+        sleep_ms(150);
+        gpio_put(dis->led_pin, 0);
+        sleep_ms(150);
+    }
 }

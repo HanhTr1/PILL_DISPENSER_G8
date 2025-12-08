@@ -16,7 +16,12 @@
 #define LED_BLINK_US 500000
 #define BUTTON_DEBOUNCE_MS 20
 #define SLOT_OFFSET_STEPS 144
+#define HALF_STEPS 512
+#define RECOVERY_STEPS 50
 
+//pill
+#define PILL_TIME 30000
+#define PILL_NUMS 7
 //uart
 #define UART_NR 1
 #define UART_TX_PIN 4
@@ -48,6 +53,9 @@ typedef struct {
     bool calibrated;
     volatile bool index_hit;
     int  slot_offset_steps;
+    //for recovery
+    bool in_motion;
+    uint16_t current_steps_slot;
 } Stepper;
 
 typedef struct {
@@ -63,9 +71,8 @@ typedef struct {
     uint total_dispense_count;
     uint failed_dispense_count;
     absolute_time_t next_dispense_time;
-
+    uint8_t slot_done;
     bool is_lorawan_connected;
-
 } Dispenser;
 
 #endif //PILL_DISPENSER_BOARD_CONFIG_H
