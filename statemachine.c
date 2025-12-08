@@ -340,6 +340,8 @@ void statemachine_step(Dispenser* dis) {
         // then return to the initial wait state.
         led_blink(dis, 3);
         log_event(dis, "CYCLE FINISHED RESET");
+        dis->motor->calibrated = false;
+        save_sm_state(dis);
         dis->state = ST_WAIT_CALIBRATION;
         dis->pills_left = PILL_NUMS; // or reset to default pills_to_dispense if you want
         break;

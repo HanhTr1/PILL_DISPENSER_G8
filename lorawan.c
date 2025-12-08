@@ -18,7 +18,7 @@ bool lorawan_send_command(const char *command, const char *expect, uint32_t time
     uint32_t start = time_us_32();
     while (time_us_32() - start < timeout_ms * 1000) {
         if (uart_readable_timeout(UART_NR, response, sizeof(response), 2000)) {
-            printf("[LORA] << %s\n", response);
+            //printf("[LORA] << %s\n", response);
             if (strstr(response, expect)) {
                 return true;
             }
@@ -38,17 +38,17 @@ bool lorawan_join(void) {
         return false;
     }
 
-    printf("[LORA] Setting APPKEY......\n");
+    //printf("[LORA] Setting APPKEY......\n");
     if (!lorawan_send_command("AT+KEY=APPKEY,\"c695805d0cf7cd4ee24b11be3055659e\"\r\n", "+KEY:", 500)) {
         return false;
     }
 
-    printf("[LORA] Setting CLASS A......\n");
+    //printf("[LORA] Setting CLASS A......\n");
     if (!lorawan_send_command("AT+CLASS=A\r\n", "+CLASS:", 500)) {
         return false;
     }
 
-    printf("[LORA] Setting PORT......\n");
+    //printf("[LORA] Setting PORT......\n");
     if (!lorawan_send_command("AT+PORT=8\r\n", "+PORT:", 500)) {
         return false;
     }
@@ -67,7 +67,7 @@ bool lorawan_join(void) {
     +JOIN: LoRaWAN modem is busy
     */
 
-    printf("[LORA] Joining network......\n");
+    //printf("[LORA] Joining network......\n");
     if (!lorawan_send_command("AT+JOIN\r\n", "+JOIN: Network joined", 20000)) {   //longest!!!
         printf("[LORA] JOIN timed out or failed.\n");
         return false;
@@ -81,7 +81,7 @@ bool lorawan_send_message(const char *message) {
     char cmd[LORA_SEND_MESSAGE_BUFFER];
     snprintf(cmd, sizeof(cmd), "AT+MSG=\"%s\"\r\n", message);
 
-    printf("[LORA] Attempting to send message...\n");
+    //printf("[LORA] Attempting to send message...\n");
     /*
     *Format:
     AT+MSG="Data to send"
