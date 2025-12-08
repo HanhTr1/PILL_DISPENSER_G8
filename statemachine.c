@@ -185,7 +185,7 @@ void statemachine_step(Dispenser *dis) {
             }
             if (need_recovery) {
                 printf("[FSM] Detected mid-slot interruption -> ST_RECOVERY\n");
-                log_event(dis, "POWER LOSS MID-SLOT, ENTER RECOVERY");
+                log_event(dis, "POWER LOSS,RECOVERY");
                 dis->state = ST_RECOVERY;
                 break;
             }
@@ -216,7 +216,7 @@ void statemachine_step(Dispenser *dis) {
                 stepper_apply_slot_offset(dis->motor);
 
                 if (!dis->motor->calibrated) {
-                    printf("[FSM] Calibration failed. Back to WAIT_CALIBRATION.\n");
+                    printf("[FSM] Calibration failed.Back to WAIT_CALIBRATION.\n");
                     log_event(dis,"CALIBRATED FAIL");
                     dis->state = ST_WAIT_CALIBRATION;
                     break;

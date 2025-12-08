@@ -33,6 +33,7 @@
 #define LORA_JOIN_MAX_ATTEMPTS 5
 #define  LORA_RESPONSE_LEN 128
 
+#define LORA_MAX_PAYLOAD_LEN 50
 
 typedef enum {
     ST_BOOT,
