@@ -156,7 +156,7 @@ void statemachine_step(Dispenser* dis) {
                 log_event(dis, "BOOT DONE LORA FAIL");
             }
 
-            send_status_to_lorawan(dis, "BOOT_DONE & LORAWAN_CONNECTED!");
+            //send_status_to_lorawan(dis, "BOOT_DONE & LORAWAN_CONNECTED!");
 
 
             bool ok = restore_from_eeprom(dis);
