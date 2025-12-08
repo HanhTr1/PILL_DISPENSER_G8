@@ -81,7 +81,7 @@ void stepper_calibrate(Stepper *ptr,Dispenser*dis) {
     ptr->calibrated    = false;
     ptr->steps_per_rev = 0;
     ptr->index_hit     = false;
-
+    save_sm_state(dis);
     // 1) Make sure we are not starting inside the index gap
     if (gpio_get(ptr->sensor_pin) == 0) {
         int guard = 0;

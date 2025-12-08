@@ -68,33 +68,34 @@ static void log_event(Dispenser *dis, const char *event)
     if (dis) {
         // Only show "Day X" AFTER dispensing has started
         bool day_started =
-            (dis->slot_done > 0) ||
-            (dis->total_dispense_count > 0) ||
-            (dis->failed_dispense_count > 0);
-
+            (dis->state==ST_DISPENSING) ||
+            (dis->state==ST_RECOVERY) ||
+            (dis->state==ST_FINISHED);
 
         if (day_started) {
             uint8_t day = 0;
-            if (PILL_NUMS >= dis->pills_left) {
-                day = (uint8_t)(PILL_NUMS - dis->pills_left);
+            if (dis->pills_left<=PILL_NUMS) {
+                day = (uint8_t)(PILL_NUMS - dis->pills_left );
             }
-            snprintf(line, sizeof(line), "%s Day %u %s", ts, day, event);
+            if (day==0||day>PILL_NUMS) {
+                // Before any dispensing: don't print Day
+                snprintf(line, sizeof(line), "%s %s", ts, event);
+            }
+            else {
+                snprintf(line, sizeof(line), "%s Day %u %s", ts, day, event);
+            }
         } else {
-            // Before any dispensing: don't print Day
+            // No dispenser context
             snprintf(line, sizeof(line), "%s %s", ts, event);
         }
-    } else {
-        // No dispenser context
 
-        snprintf(line, sizeof(line), "%s %s", ts, event);
-    }
+        // 1) Store in EEPROM log
+        write_log(line);
 
-    // 1) Store in EEPROM log
-    write_log(line);
-
-    // 2) Send over LoRaWAN if connected
-    if (dis && dis->is_lorawan_connected) {
-        send_status_to_lorawan(dis, line);
+        // 2) Send over LoRaWAN if connected
+        if (dis && dis->is_lorawan_connected) {
+            send_status_to_lorawan(dis, line);
+        }
     }
 }
 
