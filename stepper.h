@@ -1,6 +1,3 @@
-//
-// Created by HaoKun Tong on 2025/12/2.
-//
 
 #ifndef BLINK_STEPPER_H
 #define BLINK_STEPPER_H
