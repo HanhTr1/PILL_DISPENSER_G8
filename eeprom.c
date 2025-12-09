@@ -7,19 +7,14 @@
 #include "eeprom.h"
 #include "board_config.h"
 #include "hardware/gpio.h"
-
-void init_default_state(device_state_t *s)
-{
-    memset(s, 0, sizeof(*s));
-    s->magic = 32;
-    s->version = 1;
-    s->calibrated = 0;
-    s->current_slot = 0;
-    s->pills_left = 7;
-    s->in_progress = 0;
-    s->disp_state =ST_BOOT;
-    save_state(s);
+void setup_i2c(void) {
+    i2c_init(I2C_PORT, I2C_BAUDRATE);
+    gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C);
+    gpio_pull_up(I2C_SDA_PIN);
+    gpio_pull_up(I2C_SCL_PIN);
 }
+
 
 int eeprom_write(uint16_t addr, uint8_t *data, size_t len) {
     if (len > LOG_ENTRY_SIZE) {
@@ -36,7 +31,7 @@ int eeprom_write(uint16_t addr, uint8_t *data, size_t len) {
     if (write !=2+len) {
         return -1; //error
     }
-    sleep_ms(5);
+    sleep_ms(15);
 
     return 0;
 }
@@ -54,13 +49,6 @@ int eeprom_read(uint16_t addr, uint8_t *data, size_t len) {
         return -1;
     }
     return 0;
-}
-void setup_i2c(void) {
-    i2c_init(I2C_PORT, I2C_BAUDRATE);
-    gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(I2C_SDA_PIN);
-    gpio_pull_up(I2C_SCL_PIN);
 }
 uint16_t crc16(const uint8_t *data_p, size_t length) {
     uint16_t crc = 0xFFFF;
@@ -107,6 +95,7 @@ void write_log(char *msg) {
     }
     int find =find_log();
     if (find == -1) {
+        printf("Logs are full. Erasing logs\n");
         erase_log();
         find =0;
     }
@@ -139,9 +128,7 @@ void read_log() {
         if (entry[0] ==0) {
             return;
         }
-
         int len = -1;
-
         for (int j = 0; j < LOG_STRING_MAX_LEN+1; j++) { //find \0 at idx 62
             if (entry[j] == 0) {
                 len = j;
@@ -152,104 +139,65 @@ void read_log() {
             printf("Invalid entry at index %d\n", i);
             return;
         }
-        uint16_t cal_crc = crc16(entry, len+1+2);
-       if (cal_crc != 0) {
-           printf("CRC ERROR\n");
-           return;
-       }
+        uint16_t stored_crc = (entry[len + 1] << 8) | entry[len + 2];
+        uint16_t calc_crc = crc16(entry, len + 1); // entry+ '\0'
+        if (calc_crc != stored_crc) {
+            printf("CRC ERROR\n");
+            return;
+        }
+
         printf("Log %d: %.*s\n\n", i, len, (char*)entry);
     }
 
 }
-void validate_command( char *command, int *command_idx) {
-    int ch;
-    while ((ch = getchar_timeout_us(0)) != PICO_ERROR_TIMEOUT) {
-        if (ch == '\n' || ch == '\r') {
-            command[*command_idx] = 0;
+int save_state(simple_state_t *s) {
+    simple_state_t buf= *s;
 
-            for (int i = 0; i < *command_idx; i++)
-                command[i] = (char)tolower((unsigned char)command[i]);
-            *command_idx = 0;
+    buf.state          =s->state;
+    buf.not_state      =~buf.state;
+    buf.pills_left     =s->pills_left;
+    buf.not_pills_left =~buf.pills_left;
 
-            if (strcmp(command, "read") == 0 && eeprom_available()) {
-                read_log();
-            } else if (strcmp(command, "erase") == 0 && eeprom_available()) {
-                erase_log();
-            } else if (command[0] != 0) {
-                printf("Unknown command\n");
-            }
-        } else if (*command_idx < COMMAND_SIZE - 1) {
-            command[(*command_idx)++] = (char)ch;
-        }
-    }
-}
-int save_state(device_state_t *s)
-{
-    device_state_t buf;
-    memcpy(&buf, s, sizeof(buf));
-
-    buf.crc = 0;
-    uint16_t c = crc16((uint8_t*)&buf, sizeof(buf) - 2);
-    buf.crc = c;
+    // motor progress
+    buf.current_steps_slot = s->current_steps_slot;
+    buf.in_motion          = s->in_motion;
+    buf.step_index       =s->step_index;
+    buf.calibrated       = s->calibrated;
+    buf.not_calibrated       =~buf.calibrated;
+    buf.slot_done        =s->slot_done;
+    buf.not_slot_done     =~buf.slot_done;
 
     return eeprom_write(STATE_ADDR, (uint8_t*)&buf, sizeof(buf));
 }
 
-int load_state(device_state_t *s)
-{
-    device_state_t buf;
+int load_state(simple_state_t *s) {
+    simple_state_t buf;
+    if (eeprom_read(STATE_ADDR, (uint8_t*)&buf, sizeof(buf)) != 0) {
+        return -1; // EEPROM error
+    }
 
-    if (eeprom_read(STATE_ADDR, (uint8_t*)&buf, sizeof(buf)) != 0)
-        return -1;
 
-    if (buf.magic != 32 || buf.version != 1)
-        return -2;
-
-    uint16_t saved_crc = buf.crc;
-    buf.crc = 0;
-    uint16_t c = crc16((uint8_t*)&buf, sizeof(buf) - 2);
-
-    if (c != saved_crc)
-        return -3;
+    if (buf.state         != (uint8_t)~buf.not_state      ||
+       buf.pills_left    != (uint8_t)~buf.not_pills_left ||
+       buf.calibrated    != (uint8_t)~buf.not_calibrated) {
+        return -2; //  data error
+       }
 
     memcpy(s, &buf, sizeof(buf));
-    return 0;
+    return 0; // OK
 }
-void mark_turn_start(device_state_t *s)
-{
-    s->in_progress = 1;
-    save_state(s);
-}
-void mark_turn_complete(device_state_t *s, bool pill_ok)
-{
-    s->in_progress = 0;
-
-    if (pill_ok && s->pills_left > 0)
-        s->pills_left--;
-
-    if (s->current_slot >= 7) {
-        s->current_slot = 0;
-        s->disp_state = ST_FINISHED;
-    } else {
-        s->current_slot++;
-    }
-
-    save_state(s);
+void save_sm_state(Dispenser *dis) {
+     if (!dis || !dis->motor) return;
+    simple_state_t s={0};
+    s.state=dis->state;
+    s.pills_left=dis->pills_left;
+    s.in_motion = dis->motor->in_motion?1:0;
+    s.calibrated=dis->motor->calibrated?1:0;
+    s.step_index= dis->motor->step_index;
+    s.slot_done=dis->slot_done;
+    save_state(&s);
 }
 
-void auto_recalibrate(device_state_t *s)
-{
-    write_log("Auto recalibrate...");
-
-    while (gpio_get(OPTO_FORK_PIN) != 0) {
-        //stepper_step_once_slow();   // 1 step
-        sleep_ms(8);                // tránh block dài
-    }
-
-    s->current_slot = 0;
-    s->calibrated = 1;
-    s->disp_state = ST_WAIT_DISPENSING;
-}
 
 
 

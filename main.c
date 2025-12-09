@@ -2,17 +2,18 @@
 #include <string.h>
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
-
+#include "eeprom.h"
 #include "board_config.h"   // BUTTON_PIN, LED_PIN, OPTO_FORK_PIN, PIEZO_PIN
 #include "stepper.h"
 #include "pill_sensor.h"
 #include "statemachine.h"
+#include "hardware/rtc.h"
 
 // Global module instances
 static Stepper         g_stepper;
 static pillSensorState g_sensor;
 static Dispenser       g_dispenser;
-
+static datetime_t t;
 // Single global GPIO IRQ callback for RP2040
 static void global_gpio_irq(uint gpio, uint32_t events) {
     // Stepper index sensor (optical fork)
@@ -26,7 +27,23 @@ static void global_gpio_irq(uint gpio, uint32_t events) {
 
 int main(void) {
     stdio_init_all();
-
+    setup_i2c();
+    rtc_init();
+    rtc_get_datetime(&t);
+    if (t.year < 2024){
+        t.year  = 2025;
+        t.month = 12;
+        t.day   = 7;
+        t.dotw  = 1; // 0 is Sunday, so 5 is Friday
+        t.hour  = 01;
+        t.min   = 36;
+        t.sec   = 00;
+        rtc_set_datetime(&t);
+    }
+    // ---for debug---
+     //erase_log();
+     //uint8_t zero=0;
+     //eeprom_write(STATE_ADDR,&zero,1);
     // -------- Stepper initialization --------
     g_stepper.pins[0]    = 2;
     g_stepper.pins[1]    = 3;
@@ -66,11 +83,9 @@ int main(void) {
 
     // -------- Main loop --------
     while (true) {
+
         // Drive high-level state machine
         statemachine_step(&g_dispenser);
-
-        // Let the SDK do housekeeping work (USB, etc.)
-        tight_loop_contents();
     }
 
     return 0;

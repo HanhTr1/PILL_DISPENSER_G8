@@ -33,7 +33,10 @@ add_executable(${PROJECT_NAME}
         dispenser_initialize.c
         button_handler.c
         statemachine.c
-
+        statemachine.h
+        iuart.c
+        lorawan.c
+        eeprom.c
 
 )
 
@@ -47,7 +50,7 @@ target_link_libraries(${PROJECT_NAME}
         hardware_pwm
         hardware_gpio
         hardware_i2c
-
+        hardware_rtc
 )
 
 # Disable usb output, enable uart output
