@@ -134,7 +134,7 @@ void statemachine_step(Dispenser* dis) {
     }
 
     //------------------------------------------------------------------------------------------
-    // LORA_CONNECT: Try to connect to LoraWan
+    // LORA_CONNECT: Try to connect to LoraWan 5 attempts
     //------------------------------------------------------------------------------------------
 
     case ST_LORA_CONNECT: {
@@ -191,7 +191,7 @@ void statemachine_step(Dispenser* dis) {
 
         if (need_recovery) {
             // motor was moving & pill hasn't fallen yet
-            //we need to re-attempt this slot
+            // need to re-attempt this slot
             printf("[FSM] -> ST_RECOVERY (will retry current slot)\n");
             log_event(dis, "POWER LOSS DURING MOVEMENT");
             dis->state = ST_RECOVERY;
@@ -374,13 +374,12 @@ void statemachine_step(Dispenser* dis) {
         break;
     }
     //------------------------------------------------------------------------------------------
-    // FINISHED: blink LED 5 times, reset for next cycle
+    // FINISHED: reset for next cycle
     //------------------------------------------------------------------------------------------
 
     case ST_FINISHED:
-        led_blink(dis, 3);
+    
         log_event(dis, "CYCLE COMPLETE");
-
 
         // Reset for next cycle
         dis->motor->calibrated = false;
