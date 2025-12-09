@@ -1,6 +1,3 @@
-//
-// Created by HaoKun Tong on 2025/12/1.
-//
 
 #include"pico/stdlib.h"
 #include "pico/time.h"
