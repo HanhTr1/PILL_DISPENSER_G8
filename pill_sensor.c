@@ -10,8 +10,10 @@
 #include "board_config.h"
 #include<stdio.h>
 
+#include "statemachine.h"
 
 
+volatile bool need_to_save = false;
 
 void pill_sensor_handle_irq(pillSensorState *ptr, uint gpio, uint32_t events,Dispenser *dis) {
     if (!ptr||!dis) return;
@@ -21,6 +23,7 @@ void pill_sensor_handle_irq(pillSensorState *ptr, uint gpio, uint32_t events,Dis
         ptr->last_edge_count++;
         if (!dis->pill_hit){
             dis->pill_hit=true;
+            need_to_save=true;
         }
     }
 }

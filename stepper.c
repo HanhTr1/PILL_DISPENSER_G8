@@ -10,6 +10,7 @@
 #define MIN_STEPS_VALID    50      // Minimum steps between index hits to be considered a full revolution
 #define MAX_STEPS_GUARD    10000   // Safety upper bound to avoid infinite loops
 
+
 // Half-step sequence (LSB -> pins[0])
 static const uint8_t half_steps[8][4] = {
     {1, 0, 0, 0},
@@ -150,8 +151,7 @@ void stepper_calibrate(Stepper *ptr,Dispenser*dis) {
 // During the motion we periodically save the state to EEPROM
 // so that a power-loss in the middle can be detected & recovered.
 
-void stepper_step_one_slot(Stepper *ptr, Dispenser *dis)
-{
+void stepper_step_one_slot(Stepper *ptr, Dispenser *dis) {
     if (!ptr->calibrated) {
         printf("[Stepper] Not calibrated.\n");
         return;
@@ -166,17 +166,18 @@ void stepper_step_one_slot(Stepper *ptr, Dispenser *dis)
     uint16_t after_recovery=STEPS_PER_SLOT;
     while (after_recovery--) {
         step(ptr,+1);
+        }
+
+        // Finished one full slot: we are exactly at the new slot boundary
+        // ptr->current_steps_slot = 0;
+        ptr->in_motion          = false;
+
+        motor_off(ptr);
+
+        // Save final “slot boundary” state
+        save_sm_state(dis);
     }
 
-    // Finished one full slot: we are exactly at the new slot boundary
-    // ptr->current_steps_slot = 0;
-    ptr->in_motion          = false;
-
-    motor_off(ptr);
-
-    // Save final “slot boundary” state
-    save_sm_state(dis);
-}
 
 // Apply fixed offset from index gap to pill-slot 0
 void stepper_apply_slot_offset(Stepper *ptr) {

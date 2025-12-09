@@ -59,7 +59,7 @@ static void format_timestamp(char* buf, size_t len) {
 
 // Log + LoRa helper: add timestamp + (optional) day index
 
-static void log_event(Dispenser *dis, const char *event)
+ static void log_event(Dispenser *dis, const char *event)
 {
     char ts[20];
     char line[LOG_STRING_MAX_LEN];

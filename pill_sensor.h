@@ -9,8 +9,8 @@
 #define PILL_SENSOR_PIN 27
 #define PILL_FALL_DISTANCE 0.035f
 #define GRAVITY 9.8f
-#define PILL_FALLTIME_MARGIN 0.3f
-#define MOTOR_STOP_EXTRA_MS    50
+#define PILL_FALLTIME_MARGIN 0.1f
+#define MOTOR_STOP_EXTRA_MS    10
 
 #include <stdbool.h>
 #include <stdint.h>
