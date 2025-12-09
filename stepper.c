@@ -147,7 +147,7 @@ void stepper_calibrate(Stepper *ptr,Dispenser*dis) {
 }
 
 // Move forward exactly one pill slot (CW).
-// During the motion we periodically save the state to EEPROM
+//save the motion flag to eeprom ,when slot begin and end 
 // so that a power-loss in the middle can be detected & recovered.
 
 void stepper_step_one_slot(Stepper *ptr, Dispenser *dis)
