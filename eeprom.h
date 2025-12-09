@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "hardware/i2c.h"
-
+#include "board_config.h"
 
 #define I2C_PORT i2c0
 #define I2C_SDA_PIN 16
@@ -29,8 +29,6 @@
 
 #define STATE_ADDR 0X0800
 
-typedef struct Dispenser Dispenser;
-
 typedef struct {
     uint8_t state;       // FSM state
     uint8_t not_state;   // ~state
@@ -43,7 +41,6 @@ typedef struct {
     uint8_t not_calibrated;
     uint8_t slot_done;
     uint8_t not_slot_done;
-    uint8_t pill_hit;
 } simple_state_t;
 
 

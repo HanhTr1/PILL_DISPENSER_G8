@@ -10,7 +10,6 @@
 #define MIN_STEPS_VALID    50      // Minimum steps between index hits to be considered a full revolution
 #define MAX_STEPS_GUARD    10000   // Safety upper bound to avoid infinite loops
 
-
 // Half-step sequence (LSB -> pins[0])
 static const uint8_t half_steps[8][4] = {
     {1, 0, 0, 0},
@@ -151,33 +150,35 @@ void stepper_calibrate(Stepper *ptr,Dispenser*dis) {
 // During the motion we periodically save the state to EEPROM
 // so that a power-loss in the middle can be detected & recovered.
 
-void stepper_step_one_slot(Stepper *ptr, Dispenser *dis) {
+void stepper_step_one_slot(Stepper *ptr, Dispenser *dis)
+{
     if (!ptr->calibrated) {
         printf("[Stepper] Not calibrated.\n");
         return;
     }
 
     uint16_t STEPS_PER_SLOT = HALF_STEPS;
-    ptr->in_motion         = true;
+    ptr->in_motion = true;
     save_sm_state(dis);
 
     printf("[Stepper] step_one_slot: target_steps=%u\n", STEPS_PER_SLOT);
     stepper_lock_phase(ptr);
+
     uint16_t after_recovery=STEPS_PER_SLOT;
     while (after_recovery--) {
         step(ptr,+1);
-        }
-
-        // Finished one full slot: we are exactly at the new slot boundary
-        // ptr->current_steps_slot = 0;
-        ptr->in_motion          = false;
-
-        motor_off(ptr);
-
-        // Save final “slot boundary” state
-        save_sm_state(dis);
     }
 
+    // Finished one full slot: we are exactly at the new slot boundary
+    // ptr->current_steps_slot = 0;
+    ptr->in_motion = false;
+
+    motor_off(ptr);
+
+    // Save final “slot boundary” state
+    save_sm_state(dis);
+    printf("[Stepper] Motor stopped, waiting for pill detection check\n");
+}
 
 // Apply fixed offset from index gap to pill-slot 0
 void stepper_apply_slot_offset(Stepper *ptr) {
@@ -190,8 +191,7 @@ void stepper_apply_slot_offset(Stepper *ptr) {
     int dir = (steps >= 0) ? +1 : -1;
     if (steps < 0) steps = -steps;
 
-    printf("Apply slot offset: %d half-steps (%s)\n",
-           steps, dir > 0 ? "CW" : "CCW");
+    //printf("Apply slot offset: %d half-steps (%s)\n", steps, dir > 0 ? "CW" : "CCW");
 
     while (steps-- > 0) {
         step(ptr, dir);
@@ -200,85 +200,87 @@ void stepper_apply_slot_offset(Stepper *ptr) {
 }
 // Power-loss recovery: re-align to the mechanical reference using the optical index,
 // then apply the fixed slot offset so that we end up at a true slot boundary.
+
 void stepper_recovery(Stepper *ptr, Dispenser *dis)
 {
-    if (!ptr) return;
+    if (!ptr || !dis) return;
 
     if (!ptr->in_motion) {
-        printf("[Stepper] No partial slot to recover.\n");
+        printf("[Stepper] No recovery needed (motor not in motion).\n");
         return;
     }
 
     if (!ptr->calibrated) {
-        printf("[Stepper] Motor not calibrated -> cannot do index-based recovery.\n");
+        printf("[Stepper] Not calibrated - cannot recover.\n");
         return;
     }
 
-    printf("[Stepper] Recovery Start. phase_index=%u\n",
-            ptr->step_index);
+    printf("[Stepper] RECOVERY START\n");
+    //printf("[Stepper] Completed slots: %u\n", dis->slot_done);
+    //printf("[Stepper] Current phase_index: %u\n", ptr->step_index);
 
-    // 1) Lock current phase to avoid startup jitter
+    // Lock phase to prevent jitter
     stepper_lock_phase(ptr);
 
-    // 2) Rotate CCW until the optical sensor state changes (find index edge)
-    int  start_state = gpio_get(ptr->sensor_pin);
-    int  guard       = 0;
-    bool found_edge  = false;
+    // STEP 1: Find optical index (reference point)
+    // Rotate CCW until we detect the index edge
+    int start_state = gpio_get(ptr->sensor_pin);
+    int guard = 0;
+    bool found_edge = false;
 
-    while (!found_edge) {
-        step(ptr, -1);  // CCW (reverse)
+    //printf("[Stepper] Searching for index edge (CCW)...\n");
+    while (!found_edge && guard < MAX_STEPS_GUARD) {
+        step(ptr, -1);  // CCW
         guard++;
 
         int now = gpio_get(ptr->sensor_pin);
         if (now != start_state) {
             found_edge = true;
-            break;
-        }
-
-        if (guard > 10000) {  // Safety guard to avoid infinite loop
-            printf("[Stepper] ERROR: Cannot find index edge!\n");
-            motor_off(ptr);
-            return;
         }
     }
 
-    printf("[Stepper] Index edge found after %d half-steps.\n", guard);
+    if (!found_edge) {
+        printf("[Stepper] ERROR: Cannot find index edge!\n");
+        motor_off(ptr);
+        return;
+    }
 
-    // 3) From the sensor edge, move CCW by slot_offset_steps to align the slot center
+    //printf("[Stepper] Index found after %d steps CCW\n", guard);
+
+    // STEP 2: Apply slot offset to align to slot 0 center
     if (ptr->slot_offset_steps > 0) {
-        printf("[Stepper] Backward offset %d half-steps to align slot center.\n",
-               ptr->slot_offset_steps);
-
+        //printf("[Stepper] Applying offset %d steps CCW to slot 0\n", ptr->slot_offset_steps);
         for (int s = 0; s < ptr->slot_offset_steps; s++) {
-            step(ptr, -1);  // CCW again
+            step(ptr, -1);  // CCW
         }
+    }
+
+    // STEP 3: Move CW to end of last COMPLETED slot
+    // slot_done = number of completed slots (0-based indexing)
+    // We want to be at the END of slot_done, ready to start slot (slot_done + 1)
+
+    if (dis->slot_done > 0) {
+        uint32_t steps_to_run = (uint32_t)dis->slot_done * HALF_STEPS;
+
+        //printf("[Stepper] Moving CW %lu steps to end of slot %u\n", (unsigned long)steps_to_run, dis->slot_done);
+
+        while (steps_to_run--) {
+            step(ptr, +1);  // CW
+        }
+
+        printf("[Stepper] Now at end of slot %u\n", dis->slot_done);
     } else {
-        printf("[Stepper] slot_offset_steps == 0, skip offset.\n");
-    }
-    uint8_t slots_to_skip = dis->slot_done;
-
-    uint32_t steps_to_run = (uint32_t)slots_to_skip * HALF_STEPS+RECOVERY_STEPS;
-    if (dis->pill_hit) {
-        steps_to_run += HALF_STEPS;
-        printf("[Stepper] Pill dropped early -> advancing one extra slot.\n");
-    }
-    printf("[Stepper] Advancing %u slots (%lu half-steps) to reach correct slot.\n",
-        slots_to_skip + (dis->pill_hit ? 1 : 0),
-        (unsigned long)steps_to_run);
-
-    while (steps_to_run--) {
-        step(ptr, +1);  // CW
+        printf("[Stepper] At slot 0 (no slots completed yet)\n");
     }
 
-
-    // 4) Reset state
-
-    ptr->in_motion          = false;
+    // STEP 4: Clear in_motion flag
+    ptr->in_motion = false;
     motor_off(ptr);
 
     if (dis) {
         save_sm_state(dis);
     }
 
-    printf("[Stepper] Recovery finished, aligned to slot boundary.\n");
+    printf("[Stepper] RECOVERY COMPLETE - Ready to attempt slot %u\n",
+           dis->slot_done + 1);
 }

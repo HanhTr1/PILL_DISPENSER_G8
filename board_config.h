@@ -4,7 +4,6 @@
 #include"pill_sensor.h"
 #include "pico/stdlib.h"
 
-
 //pin
 #define SW_0 9
 #define SW_2 7
@@ -32,13 +31,14 @@
 //lora
 #define LORA_JOIN_INTERVAL_MS 5000
 #define LORA_JOIN_MAX_ATTEMPTS 5
-#define  LORA_RESPONSE_LEN 128
+#define LORA_RESPONSE_LEN 128
 
 #define LORA_MAX_PAYLOAD_LEN 50
 
 typedef enum {
     ST_BOOT,
     ST_LORA_CONNECT,
+    ST_CHECK_EEPROM,
     ST_RECOVERY,
     ST_WAIT_CALIBRATION,         //wait button, blink led
     ST_CALIBRATION,             //calib
@@ -74,7 +74,6 @@ typedef struct Dispenser{
     absolute_time_t next_dispense_time;
     uint8_t slot_done;
     bool is_lorawan_connected;
-    bool pill_hit;
 } Dispenser;
 
 #endif //PILL_DISPENSER_BOARD_CONFIG_H

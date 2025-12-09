@@ -9,14 +9,11 @@
 #define PILL_SENSOR_PIN 27
 #define PILL_FALL_DISTANCE 0.035f
 #define GRAVITY 9.8f
-#define PILL_FALLTIME_MARGIN 0.1f
-#define MOTOR_STOP_EXTRA_MS    10
+#define PILL_FALLTIME_MARGIN 0.5f
+#define MOTOR_STOP_EXTRA_MS    80
 
 #include <stdbool.h>
 #include <stdint.h>
-
-#include"eeprom.h"
-typedef  struct Dispenser Dispenser;
 
 typedef struct {
     float fall_distance ;
@@ -33,9 +30,11 @@ void pill_sensor_init(pillSensorState*ptr);
 
 void pill_sensor_update(pillSensorState*ptr);
 
-bool pill_sensor_is_ready(pillSensorState*ptr,Dispenser*dis);
+bool pill_sensor_is_ready(pillSensorState*ptr);
 
-void pill_sensor_handle_irq(pillSensorState*ptr,uint gpio, uint32_t events,Dispenser*dis);
+void pill_sensor_handle_irq(pillSensorState*ptr,uint gpio, uint32_t events);
+
+void pill_sensor_reset(pillSensorState*ptr);
 
 
 

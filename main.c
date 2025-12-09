@@ -24,7 +24,7 @@ static void global_gpio_irq(uint gpio, uint32_t events) {
     }
 
     // Pill hit sensor (piezo)
-    pill_sensor_handle_irq(&g_sensor, gpio, events,&g_dispenser);
+    pill_sensor_handle_irq(&g_sensor, gpio, events);
 }
 
 int main(void) {
