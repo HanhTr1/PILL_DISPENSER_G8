@@ -33,7 +33,6 @@ add_executable(${PROJECT_NAME}
         dispenser_initialize.c
         button_handler.c
         statemachine.c
-        statemachine.h
         iuart.c
         lorawan.c
         eeprom.c
