@@ -75,3 +75,10 @@ bool pill_sensor_is_ready(pillSensorState *ptr) {
 
     return ptr->last_hit;
 }
+
+void pill_sensor_reset(pillSensorState *ptr){
+    if(!ptr) return ;
+    ptr->hit_flag=false;
+    ptr->last_edge_count=0;
+    ptr->last_hit=false;
+}
