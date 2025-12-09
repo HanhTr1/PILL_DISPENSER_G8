@@ -1,6 +1,4 @@
-//
-// Created by HaoKun Tong on 2025/12/1.
-//
+
 
 #ifndef BLINK_PILL_SENSOR_H
 #define BLINK_PILL_SENSOR_H
