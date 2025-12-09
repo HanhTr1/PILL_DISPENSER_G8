@@ -69,13 +69,11 @@ static void log_event(Dispenser* dis, const char* event) {
     if (dis) {
         // Only show "Day X" AFTER dispensing has started
         bool day_started =
-            (dis->state == ST_DISPENSING) ||
-            (dis->state == ST_RECOVERY) ||
-            (dis->state == ST_FINISHED);
+            (dis->state == ST_DISPENSING) ;
 
         if (day_started && dis->slot_done > 0) {
             uint8_t day = dis->slot_done;
-            if (day > PILL_NUMS) day = PILL_NUMS; // Cap at max
+            if (day > PILL_NUMS) day =(uint8_t) (PILL_NUMS-dis->pills_left); // Cap at max
             snprintf(line, sizeof(line), "%s Day %u %s", ts, day, event);
         }
         else {
