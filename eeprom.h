@@ -1,6 +1,3 @@
-//
-// Created by truon on 05/12/2025.
-//
 
 #ifndef PILL_DISPENSER_5_EEPROM_H
 #define PILL_DISPENSER_5_EEPROM_H
@@ -24,7 +21,6 @@
 #define LOG_ENTRY_SIZE 64
 #define LOG_AREA_SIZE 2048
 #define LOG_MAX_ENTRIES 200
-#define COMMAND_SIZE 8
 #define LOG_STRING_MAX_LEN 61
 
 #define STATE_ADDR 0X0800
@@ -43,18 +39,17 @@ typedef struct {
     uint8_t not_slot_done;
 } simple_state_t;
 
-
-int eeprom_write(uint16_t addr, uint8_t *data, size_t len);
-
-int eeprom_read(uint16_t addr, uint8_t *data, size_t len);
 void setup_i2c(void);
-
-uint16_t crc16(const uint8_t *data_p, size_t length);
 bool eeprom_available();
+int eeprom_write(uint16_t addr, uint8_t *data, size_t len);
+int eeprom_read(uint16_t addr, uint8_t *data, size_t len);
+uint16_t crc16(const uint8_t *data_p, size_t length);
+
 int find_log();
-void erase_log() ;
 void write_log( char *msg);
 void read_log();
+void erase_log() ;
+
 int save_state(simple_state_t *s);
 int load_state(simple_state_t *s);
 void save_sm_state(Dispenser *dis);
