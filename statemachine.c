@@ -284,13 +284,16 @@ void statemachine_step(Dispenser* dis) {
 
             printf("[FSM] Attempting slot %u (completed=%u, pills_left=%u)\n",
                    current_slot_attempt, dis->slot_done, dis->pills_left);
-
-            // 1) Rotate wheel by one slot
+            // 1)reset the pill_sensor flag 
+            if (dis->sensor){
+                pill_sensor_reset(dis->sensor);
+            }
+            // 2) Rotate wheel by one slot
             if (dis->motor) {
                 stepper_step_one_slot(dis->motor, dis);
             }
 
-            // 2) Wait within the pre-computed time window for a piezo hit
+            // 3) Wait within the pre-computed time window for a piezo hit
             bool hit = false;
             if (dis->sensor) {
                 hit = pill_sensor_is_ready(dis->sensor);
