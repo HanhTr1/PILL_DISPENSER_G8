@@ -38,6 +38,7 @@
 typedef enum {
     ST_BOOT,
     ST_LORA_CONNECT,
+    ST_CHECK_EEPROM,
     ST_RECOVERY,
     ST_WAIT_CALIBRATION,         //wait button, blink led
     ST_CALIBRATION,             //calib
