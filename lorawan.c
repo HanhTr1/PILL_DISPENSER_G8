@@ -1,8 +1,6 @@
 #include "lorawan.h"
-
 #include <stdio.h>
 #include <string.h>
-
 #include "board_config.h"
 #include "iuart.h"
 

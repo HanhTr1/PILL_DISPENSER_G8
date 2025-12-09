@@ -9,7 +9,11 @@
 #include "lorawan.h"
 #include "hardware/rtc.h"
 
-//restore data from eeprom
+//==============================================================================================
+// HELPER FUNCTIONS
+//==============================================================================================
+
+
 bool restore_from_eeprom(Dispenser* dis) {
     if (!dis) return false;
     if (!dis->motor) {
@@ -55,8 +59,7 @@ static void format_timestamp(char* buf, size_t len) {
              t.hour, t.min, t.sec);
 }
 
-// Log + LoRa helper: add timestamp + (optional) day index
-
+// Log + LoRa helper: add timestamp + (opt) day index
 static void log_event(Dispenser* dis, const char* event) {
     char ts[20];
     char line[LOG_STRING_MAX_LEN];
@@ -89,46 +92,53 @@ static void log_event(Dispenser* dis, const char* event) {
     }
 }
 
-// Half-step offset between optical index and the first pill slot.
-// You measured that one slot ≈ 144 half-steps.
+//==============================================================================================
+// INITIALIZATION
+//==============================================================================================
+
+// move one slot ~ 144 half-steps.
 void statemachine_init(Dispenser* dis,
                        Stepper* motor,
                        pillSensorState* sensor,
                        uint8_t pills_to_dispense,
                        uint32_t interval_ms) {
-    // Use existing helper to configure button / LED / piezo pins
     dispenser_init(dis, SW_0,SW_2, LED_PIN, PIEZO_PIN);
 
-    //set initial stage here!
     dis->state = ST_BOOT;
-
-    // Attach modules
     dis->motor = motor;
     dis->sensor = sensor;
-
-    // High-level logic parameters
     dis->pills_left = pills_to_dispense;
     dis->interval_ms = interval_ms;
 
-    // Statistics
     dis->total_dispense_count = 0;
     dis->failed_dispense_count = 0;
-
     dis->slot_done = 0;
 
     // First target time for dispensing
     // dis->next_dispense_time = make_timeout_time_ms(interval_ms);
 }
 
+//==============================================================================================
+// STATE MACHINE
+//==============================================================================================
+
 void statemachine_step(Dispenser* dis) {
     switch (dis->state) {
+
+    //------------------------------------------------------------------------------------------
+    // BOOT: Initial system startup
+    //------------------------------------------------------------------------------------------
+
     case ST_BOOT: {
         printf("[FSM] Booting system...\n");
-        //printf("[FSM] Debug pause: plug USB & open serial now...\n");
-        // Give USB some time to enumerate and allow opening the serial monitor
-        sleep_ms(3000);
+        sleep_ms(3000); //usb enumeration delay
         dis->state = ST_LORA_CONNECT;
+        break;
     }
+
+    //------------------------------------------------------------------------------------------
+    // LORA_CONNECT: Try to connect to LoraWan
+    //------------------------------------------------------------------------------------------
 
     case ST_LORA_CONNECT: {
         printf("[FSM] Connecting to LoRaWAN...\n");
@@ -148,13 +158,11 @@ void statemachine_step(Dispenser* dis) {
             log_event(dis, "BOOT DONE LORA FAIL");
         }
 
-        //send_status_to_lorawan(dis, "BOOT_DONE & LORAWAN_CONNECTED!");
-
-
+        //?should we have a st_check_eeprom here? !!!!!!!!!!!
         bool ok = restore_from_eeprom(dis);
 
         if (!ok) {
-            // No valid EEPROM => fresh boot: go to wait for calib
+            //no valid EEPROM => fresh boot: go to wait for calib
             printf("[FSM] No valid EEPROM data -> fresh boot.\n");
             log_event(dis, "FRESH BOOT");
             dis->state = ST_WAIT_CALIBRATION;
@@ -162,7 +170,6 @@ void statemachine_step(Dispenser* dis) {
         }
 
         // EEPROM restore succeeded
-
         printf(
             "[FSM] EEPROM restored. state=%d, pills_left=%u,in_motion=%d, calibrated=%d,step_index=%u,slot_done=%u\n",
             dis->state,
@@ -172,7 +179,7 @@ void statemachine_step(Dispenser* dis) {
 
         bool need_recovery = false;
 
-        // 1) First, check if we lost power in the middle of a slot
+        // 1. check if we lost power in the middle of a slot
         if (dis->motor && dis->motor->in_motion) {
             // Motor was moving when power lost
             need_recovery = true;
@@ -180,42 +187,48 @@ void statemachine_step(Dispenser* dis) {
         }
 
         if (need_recovery) {
-            // CRITICAL: Motor was moving, pill hasn't fallen yet
-            // After recovery, we'll be at START of current slot (slot_done + 1)
-            // We need to re-attempt this slot
+            // motor was moving & pill hasn't fallen yet
+            //we need to re-attempt this slot
             printf("[FSM] -> ST_RECOVERY (will retry current slot)\n");
             log_event(dis, "POWER LOSS DURING MOVEMENT");
             dis->state = ST_RECOVERY;
             break;
         }
-        // === 2. No recovery needed: check calibration status ===
+        // 2. no recovery needed: check calibration status
         if (!dis->motor || !dis->motor->calibrated) {
             printf("[FSM] Motor not calibrated -> ST_WAIT_CALIBRATION\n");
             log_event(dis, "MOTOR NOT CALIBRATED");
             dis->state = ST_WAIT_CALIBRATION;
             break;
         }
-        // === 3. Motor calibrated and no interrupted motion: ready to wait for dispensing ===
-        // FIX: Check if we were in the middle of dispensing
+        // 3. Motor calibrated and no interrupted motion: ready to wait for dispensing
         if (dis->state == ST_DISPENSING && dis->pills_left > 0) {
             // Resume dispensing - set next dispense time
             dis->next_dispense_time = make_timeout_time_ms(dis->interval_ms);
             printf("[FSM] Resuming dispensing, pills_left=%u\n", dis->pills_left);
             log_event(dis, "RESUME DISPENSING");
             dis->state = ST_DISPENSING;
-        } else {
-            // Was waiting or finished
+        }
+        else {
+            //was waiting or finished
             printf("[FSM] System ready -> ST_WAIT_DISPENSING\n");
             dis->state = ST_WAIT_DISPENSING;
         }
         break;
     }
 
+    //------------------------------------------------------------------------------------------
+    // WAIT_CALIBRATION: wait SW_0 pressed while blinking LED
+    //------------------------------------------------------------------------------------------
+
     case ST_WAIT_CALIBRATION:
-        // First button press -> go to calibration state
         send_status_to_lorawan(dis, "WAIT FOR CALIBRATION!");
         wait_calib_button_handler(dis);
         break;
+
+    //------------------------------------------------------------------------------------------
+    // CALIBRATION: perform calibration
+    //------------------------------------------------------------------------------------------
 
     case ST_CALIBRATION:
         if (dis->motor) {
@@ -240,11 +253,19 @@ void statemachine_step(Dispenser* dis) {
         dis->state = ST_WAIT_DISPENSING;
         break;
 
+    //------------------------------------------------------------------------------------------
+    // WAIT_DISPENSING: wait SW_2 pressed, LED stays on
+    //------------------------------------------------------------------------------------------
+
     case ST_WAIT_DISPENSING:
-        // Second button press -> start dispensing loop
         send_status_to_lorawan(dis, "WAIT FOR DISPENSING!");
         wait_dispensing_button_handler(dis);
         break;
+
+
+    //------------------------------------------------------------------------------------------
+    // DISPENSING: Main dispensing
+    //------------------------------------------------------------------------------------------
 
     case ST_DISPENSING: {
         if (dis->pills_left == 0) {
@@ -280,8 +301,8 @@ void statemachine_step(Dispenser* dis) {
                 dis->slot_done = current_slot_attempt;
 
                 printf("[FSM] PILL DETECTED. completed_slots=%u, total_pills=%lu, left=%u\n",
-                           dis->slot_done, (unsigned long)dis->total_dispense_count,
-                           dis->pills_left);
+                       dis->slot_done, (unsigned long)dis->total_dispense_count,
+                       dis->pills_left);
                 log_event(dis, "DISPENSE OK");
                 //dis->slot_done = dis->total_dispense_count;
             }
@@ -293,8 +314,8 @@ void statemachine_step(Dispenser* dis) {
                 dis->slot_done = current_slot_attempt;
 
                 printf("[FSM] NO PILL. completed_slots=%u, failed=%lu, left=%u\n",
-                           dis->slot_done, (unsigned long)dis->failed_dispense_count,
-                           dis->pills_left);
+                       dis->slot_done, (unsigned long)dis->failed_dispense_count,
+                       dis->pills_left);
                 log_event(dis, "DISPENSE FAIL NO PILLS");
                 //dis->slot_done = (dis->slot_done + 1) % PILL_NUMS;
                 led_blink(dis, 5);
@@ -305,6 +326,9 @@ void statemachine_step(Dispenser* dis) {
         }
         break;
     }
+    //------------------------------------------------------------------------------------------
+    // RECOVERY: recover from power loss
+    //------------------------------------------------------------------------------------------
 
     case ST_RECOVERY: {
         printf("[FSM] Recovery state...\n");
@@ -322,16 +346,13 @@ void statemachine_step(Dispenser* dis) {
             break;
         }
 
-        // FIX: After recovery, we are at the START of slot_done
-        // The motor moved slot_done times already
-        // We DON'T increment slot_done here
         printf("[FSM] Recovering: %u slots completed, will retry slot %u\n",
-                   dis->slot_done, dis->slot_done + 1);
+               dis->slot_done, dis->slot_done + 1);
         // rewind partial slot and recalibrate (inside stepper_recovery)
         stepper_recovery(dis->motor, dis);
 
         printf("[FSM] Recovery done. At end of slot %u, will retry slot %u\n",
-                   dis->slot_done, dis->slot_done + 1);
+               dis->slot_done, dis->slot_done + 1);
         log_event(dis, "RECOVERY DONE");
 
         if (dis->pills_left > 0) {
@@ -339,23 +360,25 @@ void statemachine_step(Dispenser* dis) {
             dis->next_dispense_time = make_timeout_time_ms(dis->interval_ms);
             dis->state = ST_DISPENSING;
             printf("[FSM] Resuming dispensing...\n");
-        } else {
+        }
+        else {
             // No pills left
             dis->state = ST_FINISHED;
         }
         break;
     }
+    //------------------------------------------------------------------------------------------
+    // FINISHED: blink LED 5 times, reset for next cycle
+    //------------------------------------------------------------------------------------------
 
     case ST_FINISHED:
-        // LED blink 5 times to indicate the cycle is finished,
-        // then return to the initial wait state.
         led_blink(dis, 3);
         log_event(dis, "CYCLE COMPLETE");
 
 
         // Reset for next cycle
         dis->motor->calibrated = false;
-        dis->slot_done = 0;  //reset slot counter
+        dis->slot_done = 0; //reset slot counter
         dis->pills_left = PILL_NUMS;
         dis->total_dispense_count = 0;
         dis->failed_dispense_count = 0;
