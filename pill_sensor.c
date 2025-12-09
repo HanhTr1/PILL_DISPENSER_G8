@@ -8,9 +8,8 @@
 #include<math.h>
 #include <time.h>
 #include "board_config.h"
-#include<stdio.h>
 
-#include "statemachine.h"
+
 
 
 volatile bool need_to_save = false;
