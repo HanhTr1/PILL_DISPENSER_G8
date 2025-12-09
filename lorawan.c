@@ -73,7 +73,7 @@ bool lorawan_join(void) {
         return false;
     }
 
-    printf("[LORA] JOIN OK.\n");
+    //printf("[LORA] JOIN OK.\n");
     return true;
 
 }
@@ -133,15 +133,15 @@ bool uart_readable_timeout(int uart_nr, char* buffer, int max_len, uint32_t time
 
 bool handle_lorawan(void) {
 
-    for (int attempt = 1; attempt < LORA_JOIN_MAX_ATTEMPTS; attempt++) {
+    for (int attempt = 1; attempt <= LORA_JOIN_MAX_ATTEMPTS; attempt++) {
         printf("[LORA] LoRa join attempt %d/%d\n", attempt, LORA_JOIN_MAX_ATTEMPTS);
 
         if (lorawan_join()) {
             printf("[LORA] JOIN SUCCESS\n");
             return true;
+        } else {
+            printf("[LORA] JOIN FAILED\n");
         }
-
-        printf("[LORA] JOIN FAILED\n");
     }
 
     printf("[LORA] Max join attempts reached.\n");
