@@ -69,11 +69,11 @@ static void log_event(Dispenser* dis, const char* event) {
     if (dis) {
         // Only show "Day X" AFTER dispensing has started
         bool day_started =
-            (dis->state == ST_DISPENSING) ;
+            (dis->state == ST_DISPENSING);
 
         if (day_started && dis->slot_done > 0) {
             uint8_t day = dis->slot_done;
-            if (day > PILL_NUMS) day =(uint8_t) (PILL_NUMS-dis->pills_left); // Cap at max
+            if (day > PILL_NUMS) day = (uint8_t)(PILL_NUMS - dis->pills_left); // Cap at max
             snprintf(line, sizeof(line), "%s Day %u %s", ts, day, event);
         }
         else {
@@ -122,7 +122,6 @@ void statemachine_init(Dispenser* dis,
 
 void statemachine_step(Dispenser* dis) {
     switch (dis->state) {
-
     //------------------------------------------------------------------------------------------
     // BOOT: Initial system startup
     //------------------------------------------------------------------------------------------
@@ -155,8 +154,14 @@ void statemachine_step(Dispenser* dis) {
             dis->is_lorawan_connected = false;
             log_event(dis, "BOOT DONE LORA FAIL");
         }
+        dis->state = ST_CHECK_EEPROM;
+        break;
+    }
+    //------------------------------------------------------------------------------------------
+    // CHECK_EEPROM: check for power loss and state/status
+    //------------------------------------------------------------------------------------------
 
-        //?should we have a st_check_eeprom here? !!!!!!!!!!!
+    case ST_CHECK_EEPROM: {
         bool ok = restore_from_eeprom(dis);
 
         if (!ok) {
@@ -279,13 +284,16 @@ void statemachine_step(Dispenser* dis) {
 
             printf("[FSM] Attempting slot %u (completed=%u, pills_left=%u)\n",
                    current_slot_attempt, dis->slot_done, dis->pills_left);
-
-            // 1) Rotate wheel by one slot
+            // 1)reset the pill_sensor flag 
+            if (dis->sensor){
+                pill_sensor_reset(dis->sensor);
+            }
+            // 2) Rotate wheel by one slot
             if (dis->motor) {
                 stepper_step_one_slot(dis->motor, dis);
             }
 
-            // 2) Wait within the pre-computed time window for a piezo hit
+            // 3) Wait within the pre-computed time window for a piezo hit
             bool hit = false;
             if (dis->sensor) {
                 hit = pill_sensor_is_ready(dis->sensor);

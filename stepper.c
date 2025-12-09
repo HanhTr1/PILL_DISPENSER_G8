@@ -191,8 +191,7 @@ void stepper_apply_slot_offset(Stepper *ptr) {
     int dir = (steps >= 0) ? +1 : -1;
     if (steps < 0) steps = -steps;
 
-    printf("Apply slot offset: %d half-steps (%s)\n",
-           steps, dir > 0 ? "CW" : "CCW");
+    //printf("Apply slot offset: %d half-steps (%s)\n", steps, dir > 0 ? "CW" : "CCW");
 
     while (steps-- > 0) {
         step(ptr, dir);
@@ -217,8 +216,8 @@ void stepper_recovery(Stepper *ptr, Dispenser *dis)
     }
 
     printf("[Stepper] RECOVERY START\n");
-    printf("[Stepper] Completed slots: %u\n", dis->slot_done);
-    printf("[Stepper] Current phase_index: %u\n", ptr->step_index);
+    //printf("[Stepper] Completed slots: %u\n", dis->slot_done);
+    //printf("[Stepper] Current phase_index: %u\n", ptr->step_index);
 
     // Lock phase to prevent jitter
     stepper_lock_phase(ptr);
@@ -229,7 +228,7 @@ void stepper_recovery(Stepper *ptr, Dispenser *dis)
     int guard = 0;
     bool found_edge = false;
 
-    printf("[Stepper] Searching for index edge (CCW)...\n");
+    //printf("[Stepper] Searching for index edge (CCW)...\n");
     while (!found_edge && guard < MAX_STEPS_GUARD) {
         step(ptr, -1);  // CCW
         guard++;
@@ -246,12 +245,11 @@ void stepper_recovery(Stepper *ptr, Dispenser *dis)
         return;
     }
 
-    printf("[Stepper] Index found after %d steps CCW\n", guard);
+    //printf("[Stepper] Index found after %d steps CCW\n", guard);
 
     // STEP 2: Apply slot offset to align to slot 0 center
     if (ptr->slot_offset_steps > 0) {
-        printf("[Stepper] Applying offset %d steps CCW to slot 0\n",
-               ptr->slot_offset_steps);
+        //printf("[Stepper] Applying offset %d steps CCW to slot 0\n", ptr->slot_offset_steps);
         for (int s = 0; s < ptr->slot_offset_steps; s++) {
             step(ptr, -1);  // CCW
         }
@@ -264,8 +262,7 @@ void stepper_recovery(Stepper *ptr, Dispenser *dis)
     if (dis->slot_done > 0) {
         uint32_t steps_to_run = (uint32_t)dis->slot_done * HALF_STEPS;
 
-        printf("[Stepper] Moving CW %lu steps to end of slot %u\n",
-               (unsigned long)steps_to_run, dis->slot_done);
+        //printf("[Stepper] Moving CW %lu steps to end of slot %u\n", (unsigned long)steps_to_run, dis->slot_done);
 
         while (steps_to_run--) {
             step(ptr, +1);  // CW

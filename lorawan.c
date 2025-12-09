@@ -93,7 +93,7 @@ bool lorawan_send_message(const char *message) {
     +MSG: RXWIN214, RSSI -106, SNR 4
     +MSG: Done
     */
-    if (lorawan_send_command(cmd, "+MSG: Done", 10000)) { //7s
+    if (lorawan_send_command(cmd, "+MSG: Done", 15000)) { //15s
         return true;
     }
 

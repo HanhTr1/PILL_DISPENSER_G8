@@ -38,6 +38,7 @@
 typedef enum {
     ST_BOOT,
     ST_LORA_CONNECT,
+    ST_CHECK_EEPROM,
     ST_RECOVERY,
     ST_WAIT_CALIBRATION,         //wait button, blink led
     ST_CALIBRATION,             //calib
@@ -46,7 +47,7 @@ typedef enum {
     ST_FINISHED                 //finished
 } DispenserState;
 
-typedef struct {
+typedef struct Stepper{
     uint pins[4];
     uint sensor_pin;
     int  step_index;
@@ -58,7 +59,7 @@ typedef struct {
     bool in_motion;
 } Stepper;
 
-typedef struct {
+typedef struct Dispenser{
     DispenserState state;
     uint button_pin;
     uint button_pin2;
