@@ -110,7 +110,7 @@ void write_log(char *msg) {
     entry[str_len + 1] = (uint8_t)(check_crc);
 
     eeprom_write(addr, entry, LOG_ENTRY_SIZE);
-    printf("Log [%d] %s\n",find, msg);
+    printf("Log [%d] %s\n",find+1, msg);
 }
 //read command
 void read_log() {
